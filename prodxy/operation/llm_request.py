@@ -1,3 +1,4 @@
+from typing import Callable
 import time
 import re
 import requests
@@ -105,7 +106,7 @@ class LLMRequest:
     JSON_REQ_PROMPT = "\nPlease analyze the given question, and only return a valid JSON string as the answer. Do not include any other explanation or content."
 
     @staticmethod
-    def call(raw_request_func, target: str = "string", **kwargs):
+    def call(raw_request_func:Callable = RawLLMRequest.by_curl, target: str = "string", **kwargs):
         retry_times=int(kwargs.get('retey_times', 3))
         for attempt in range(retry_times + 1):
             try:

@@ -54,7 +54,7 @@ class JsonPathAnalyzer:
 
 
 class JsonPathDict:
-    def __init__(self, d):
+    def __init__(self, d: dict):
         self.d = d
         self.loaded_from = None
     
