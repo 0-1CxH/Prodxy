@@ -15,7 +15,8 @@ OperationMap = {
     "valgen:range": ValueGeneratorPrimitives.range,
     "valgen:date": ValueGeneratorPrimitives.date,
     "valgen:time": ValueGeneratorPrimitives.time,
-    "condition:exist": lambda x: True if x else False
+    "condition:exist": lambda x: True if x else False,
+    "condition:identity": lambda x: x,
 }
 
     

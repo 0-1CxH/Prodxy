@@ -2,7 +2,7 @@ import unittest
 import json
 import os
 import tempfile
-from prodxy.graph.analyzer import JsonPathAnalyzer, JsonPathDict
+from prodxy.graph.state import JsonPathAnalyzer, JsonPathDict
 
 class TestJsonPathAnalyzer(unittest.TestCase):
     def setUp(self):
