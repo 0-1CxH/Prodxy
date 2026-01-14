@@ -1,5 +1,5 @@
 import unittest
-from prodxy.operation.json_analyzer import FieldCentricAnalyzer
+from prodxy.graph.analyzer import FieldCentricAnalyzer
 
 class TestFieldCentricAnalyzer(unittest.TestCase):
     

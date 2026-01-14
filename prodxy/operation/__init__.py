@@ -1,4 +1,3 @@
-from .json_analyzer import JsonPathDict, FieldCentricAnalyzer
 from .judge_func import JudgePrimitives
 from .llm_request import LLMRequest
 from .relative_time import RelativeTimePrimitives
@@ -16,11 +15,7 @@ OperationMap = {
     "valgen:range": ValueGeneratorPrimitives.range,
     "valgen:date": ValueGeneratorPrimitives.date,
     "valgen:time": ValueGeneratorPrimitives.time,
+    "condition:exist": lambda x: True if x else False
 }
-
-
-
-        
-
 
     

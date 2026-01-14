@@ -24,7 +24,65 @@ class JsonPathAnalyzer:
     def set(d, jsonpath_str, value, on_index=None):
         if on_index is None:
             jsonpath_parser = JsonPathAnalyzer.parse(jsonpath_str)
-            jsonpath_parser.update(d, value)
+            # use original update can only 'update' on existing value
+            if JsonPathAnalyzer.get(d, jsonpath_str) is not None:
+                jsonpath_parser.update(d, value)
+            # need to use other way to write new value
+            else:
+                # Create new value when the JSONPath doesn't exist
+                # This requires manual path traversal and creation
+                parts = jsonpath_str.split('.')
+                current_obj = d
+
+                # Traverse through the path, creating objects as needed
+                for i, part in enumerate(parts[:-1]):
+                    if i == 0 and part == '$':
+                        continue
+                    # Handle array indices like [0], [1], etc.
+                    if part.endswith(']'):
+                        # Extract the array name and index
+                        array_part = part.split('[')[0]
+                        index = int(part.split('[')[1].rstrip(']'))
+
+                        # Ensure the array exists
+                        if array_part not in current_obj:
+                            current_obj[array_part] = []
+                        elif not isinstance(current_obj[array_part], list):
+                            # Convert to list if it's not already
+                            current_obj[array_part] = [current_obj[array_part]]
+
+                        # Ensure the array is long enough
+                        while len(current_obj[array_part]) <= index:
+                            current_obj[array_part].append({})
+
+                        current_obj = current_obj[array_part][index]
+                    else:
+                        # Handle regular object keys
+                        if part not in current_obj:
+                            current_obj[part] = {}
+                        current_obj = current_obj[part]
+
+                # Set the final value
+                last_part = parts[-1]
+                if last_part.endswith(']'):
+                    # Handle array assignment
+                    array_part = last_part.split('[')[0]
+                    index = int(last_part.split('[')[1].rstrip(']'))
+
+                    if array_part not in current_obj:
+                        current_obj[array_part] = []
+                    elif not isinstance(current_obj[array_part], list):
+                        current_obj[array_part] = [current_obj[array_part]]
+
+                    # Ensure the array is long enough
+                    while len(current_obj[array_part]) <= index:
+                        current_obj[array_part].append(None)
+
+                    current_obj[array_part][index] = value
+                else:
+                    # Regular key assignment
+                    current_obj[last_part] = value
+
         else:
             # reg on_index to list
             if isinstance(on_index, int):
@@ -54,7 +112,9 @@ class JsonPathAnalyzer:
 
 
 class JsonPathDict:
-    def __init__(self, d: dict):
+    def __init__(self, d: dict = None):
+        if d is None:
+            d = {}
         self.d = d
         self.loaded_from = None
     

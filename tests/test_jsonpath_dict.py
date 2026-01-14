@@ -2,7 +2,7 @@ import unittest
 import json
 import os
 import tempfile
-from prodxy.operation.json_analyzer import JsonPathAnalyzer, JsonPathDict
+from prodxy.graph.analyzer import JsonPathAnalyzer, JsonPathDict
 
 class TestJsonPathAnalyzer(unittest.TestCase):
     def setUp(self):
@@ -100,23 +100,82 @@ class TestJsonPathDict(unittest.TestCase):
             for item in data:
                 f.write(json.dumps(item) + '\n')
             fname = f.name
-            
+
         try:
             # Load
             loaded = JsonPathDict.load(fname)
             self.assertEqual(len(loaded), 2)
             self.assertEqual(loaded["$[0].id"], 1)
-            
+
             # Modify and Dump
             loaded["$[0].id"] = 3
             loaded.dump()
-            
+
             # Verify dump
             with open(fname, 'r') as f:
                 lines = [json.loads(line) for line in f]
             self.assertEqual(lines[0]["id"], 3)
         finally:
             os.remove(fname)
+
+    def test_basic_functionality_setting_new_value(self):
+        """Test 1: Basic functionality - setting a value when the path doesn't exist"""
+        d = {}
+        json_dict = JsonPathDict(d)
+        json_dict['user.name'] = "John"
+        self.assertEqual(d, {"user": {"name": "John"}})
+        self.assertEqual(json_dict['user.name'], "John")
+
+    def test_setting_nested_values(self):
+        """Test 2: Setting nested values"""
+        d = {}
+        json_dict = JsonPathDict(d)
+        json_dict['user.profile.age'] = 30
+        json_dict['user.profile.email'] = "john@example.com"
+        expected = {"user": {"profile": {"age": 30, "email": "john@example.com"}}}
+        self.assertEqual(d, expected)
+        self.assertEqual(json_dict['user.profile.age'], 30)
+        self.assertEqual(json_dict['user.profile.email'], "john@example.com")
+
+    def test_array_access(self):
+        """Test 3: Array access"""
+        d = {}
+        json_dict = JsonPathDict(d)
+        json_dict['users[0].name'] = "Alice"
+        json_dict['users[1].name'] = "Bob"
+        expected = {"users": [{"name": "Alice"}, {"name": "Bob"}]}
+        self.assertEqual(d, expected)
+        self.assertEqual(json_dict['users[0].name'], "Alice")
+        self.assertEqual(json_dict['users[1].name'], "Bob")
+
+    def test_mixed_nested_objects_and_arrays(self):
+        """Test 4: Mixed nested objects and arrays"""
+        d = {}
+        json_dict = JsonPathDict(d)
+        json_dict['company.departments[0].name'] = "Engineering"
+        json_dict['company.departments[0].employees[0].name'] = "Charlie"
+        expected = {
+            "company": {
+                "departments": [
+                    {
+                        "name": "Engineering",
+                        "employees": [{"name": "Charlie"}]
+                    }
+                ]
+            }
+        }
+        self.assertEqual(d, expected)
+        self.assertEqual(json_dict['company.departments[0].name'], "Engineering")
+        self.assertEqual(json_dict['company.departments[0].employees[0].name'], "Charlie")
+
+    def test_updating_existing_values(self):
+        """Test 5: Updating existing values"""
+        d = {'user': {'name': 'John'}}
+        json_dict = JsonPathDict(d)
+        json_dict['user.name'] = "John Doe"
+        expected = {'user': {'name': 'John Doe'}}
+        self.assertEqual(d, expected)
+        self.assertEqual(json_dict['user.name'], "John Doe")
 
 if __name__ == '__main__':
     unittest.main()
