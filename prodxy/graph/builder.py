@@ -1,11 +1,11 @@
 import datetime
 import random
+import yaml
 from typing import List, Dict, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from langgraph.graph import StateGraph, START, END
 from prodxy.operation import OperationMap
 from .state import JsonPathDict
-
 
 
 
@@ -26,6 +26,15 @@ class ProdxyOperationConfig:
     read_paths: Dict[str, str]
     write_path: str
 
+    @classmethod
+    def from_dict(cls, data: Dict):
+        return cls(
+            main_op_name=data["main_op_name"],
+            condition_op_name=data["condition_op_name"],
+            read_paths=data["read_paths"],
+            write_path=data["write_path"],
+        )
+
 
 def get_random_id():
     return datetime.datetime.now().strftime('%Y%m%d%H%M%S') + str(random.randint(0, 1000))
@@ -42,17 +51,39 @@ class ProdxyNodeConfig:
             self.name = get_random_id()
         if self.conditions is None:
             self.conditions = {}
+    
+    @classmethod
+    def from_dict(cls, data: Dict):
+        return cls(
+            operations=[ProdxyOperationConfig.from_dict(operation_config) for operation_config in data["operations"]],
+            name=data.get('name'),
+            conditions=data.get("conditions"),
+        )
 
 @dataclass
 class ProdxyGraphConfig:
     node_configs: List[ProdxyNodeConfig]
     name: str = None
-    start_node_placeholder = "_start"
-    end_node_placeholder = "_end"
+    start_node_placeholder: str = None
+    end_node_placeholder: str = None
 
     def __post_init__(self):
         if self.name is None:
             self.name = get_random_id()
+        if self.start_node_placeholder is None:
+            self.start_node_placeholder = '_start'
+        if self.end_node_placeholder is None:
+            self.end_node_placeholder = '_end'
+
+
+    @classmethod
+    def from_dict(cls, data: Dict):
+        return cls(
+            node_configs=[ProdxyNodeConfig.from_dict(node_config) for node_config in data["node_configs"]],
+            name=data.get('name'),
+            start_node_placeholder=data.get("start_node_placeholder"),
+            end_node_placeholder=data.get("end_node_placeholder"),
+        )
 
 
 class ProdxyNode:
@@ -170,7 +201,15 @@ class ProdxyGraph:
         )
         self.compiled_graph.invoke(global_state)
         return global_state
-
-
-        
-
+    
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(
+            graph_config=ProdxyGraphConfig.from_dict(data),
+        )
+    
+    @classmethod
+    def from_yaml(cls, yaml_path: str):
+        with open(yaml_path, "r") as f:
+            data = yaml.safe_load(f)
+        return cls.from_dict(data)

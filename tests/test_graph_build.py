@@ -91,94 +91,94 @@ class TestMinimalGraphBuild(unittest.TestCase):
 
     def test_graph_structure_visualization(self):
         """Test that the graph can be visualized (ASCII representation)"""
-        graph = ProdxyGraph(
-            ProdxyGraphConfig(
-                node_configs=[
-                    ProdxyNodeConfig(
-                        name="node1",
-                        operations=[
-                            ProdxyOperationConfig(
-                                main_op_name="judge:equal",
-                                condition_op_name="condition:exist",
-                                read_paths={
+        graph = ProdxyGraph.from_dict(
+            {
+                "node_configs": [
+                    {
+                        "name": "node1",
+                        "operations": [
+                            {
+                                "main_op_name": "judge:equal",
+                                "condition_op_name": "condition:exist",
+                                "read_paths": {
                                     "target": "$.arg1",
                                     "source": "$.arg2"
                                 },
-                                write_path="$.result1"
-                            )
+                                "write_path": "$.result1"
+                            }
                         ],
-                        conditions={
+                        "conditions": {
                             True: "node2",
                             False: "node3",
                         },
-                    ),
-                    ProdxyNodeConfig(
-                        name="node2",
-                        operations=[
-                            ProdxyOperationConfig(
-                                main_op_name="judge:equal",
-                                condition_op_name="condition:exist",
-                                read_paths={
+                    },
+                    {
+                        "name": "node2",
+                        "operations": [
+                            {
+                                "main_op_name": "judge:equal",
+                                "condition_op_name": "condition:exist",
+                                "read_paths": {
                                     "target": "$.arg1",
                                     "source": "$.arg2"
                                 },
-                                write_path="$.result2"
-                            )
+                                "write_path": "$.result2"
+                            }
                         ]
-                    ),
-                    ProdxyNodeConfig(
-                        name="node3",
-                        operations=[
-                            ProdxyOperationConfig(
-                                main_op_name="judge:equal",
-                                condition_op_name="condition:exist",
-                                read_paths={
+                    },
+                    {
+                        "name": "node3",
+                        "operations": [
+                            {
+                                "main_op_name": "judge:equal",
+                                "condition_op_name": "condition:exist",
+                                "read_paths": {
                                     "target": "$.arg1",
                                     "source": "$.arg2"
                                 },
-                                write_path="$.result3"
-                            ),
+                                "write_path": "$.result3"
+                            },
                         ],
-                        conditions={
+                        "conditions": {
                             1: "node2",
                             2: "node4",
                             3: "node5",
                         },
-                    ),
-                    ProdxyNodeConfig(
-                        name="node4",
-                        operations=[
-                            ProdxyOperationConfig(
-                                main_op_name="judge:equal",
-                                condition_op_name="condition:exist",
-                                read_paths={
+                    },
+                    {
+                        "name": "node4",
+                        "operations": [
+                            {
+                                "main_op_name": "judge:equal",
+                                "condition_op_name": "condition:exist",
+                                "read_paths": {
                                     "target": "$.arg1",
                                     "source": "$.arg2"
                                 },
-                                write_path="$.result4"
-                            )
+                                "write_path": "$.result4"
+                            }
                         ]
-                    ),
-                    ProdxyNodeConfig(
-                        name="node5",
-                        operations=[
-                            ProdxyOperationConfig(
-                                main_op_name="judge:equal",
-                                condition_op_name="condition:exist",
-                                read_paths={
+                    },
+                    {
+                        "name": "node5",
+                        "operations": [
+                            {
+                                "main_op_name": "judge:equal",
+                                "condition_op_name": "condition:exist",
+                                "read_paths": {
                                     "target": "$.arg1",
                                     "source": "$.arg2"
                                 },
-                                write_path="$.result5"
-                            )
+                                "write_path": "$.result5"
+                            }
                         ],
-                        conditions={
+                        "conditions": {
                             1: "_end",
                             2: "node2"
                         }
-                    ),
+                    },
                 ]
-            )
+            }
         )
 
         # Test that ASCII representation can be generated
@@ -187,6 +187,7 @@ class TestMinimalGraphBuild(unittest.TestCase):
             graph.compiled_graph.get_graph().print_ascii()
         except Exception as e:
             self.fail(f"Graph ASCII visualization failed: {e}")
+        
 
 
 if __name__ == "__main__":
