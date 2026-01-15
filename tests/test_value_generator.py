@@ -2,7 +2,7 @@ import unittest
 from collections import Counter
 from datetime import datetime
 
-from prodxy.operation.value_generator import ValueGeneratorPrimitives
+from prodxy.operation.attribute_sampler import ValueGeneratorPrimitives
 
 class TestValueGeneratorPrimitives(unittest.TestCase):
     def test_enum(self):

@@ -1,7 +1,7 @@
 from .judge_func import JudgePrimitives
 from .llm_request import LLMRequest
 from .relative_time import RelativeTimePrimitives
-from .value_generator import ValueGeneratorPrimitives
+from .attribute_sampler import ValueGeneratorPrimitives, ProdxyPropertyLibrary
 
 OperationMap = {
     "judge:equal": JudgePrimitives.equal,
