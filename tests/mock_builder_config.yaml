@@ -1,0 +1,28 @@
+node_configs:
+  - name: "node1"
+    operations:
+      - main_op_name: "judge:equal"
+        condition_op_name: "condition:exist"
+        read_paths:
+          target: "$.arg1"
+          source: "$.arg2"
+        write_path: "$.result1"
+    conditions:
+      true: "node2"
+      false: "node3"
+  - name: "node2"
+    operations:
+      - main_op_name: "judge:equal"
+        condition_op_name: "condition:exist"
+        read_paths:
+          target: "$.arg1"
+          source: "$.arg2"
+        write_path: "$.result2"
+  - name: "node3"
+    operations:
+      - main_op_name: "judge:equal"
+        condition_op_name: "condition:exist"
+        read_paths:
+          target: "$.arg1"
+          source: "$.arg2"
+        write_path: "$.result3"

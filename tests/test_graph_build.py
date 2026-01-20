@@ -1,3 +1,4 @@
+import os
 import unittest
 from prodxy.graph.builder import ProdxyGraph, ProdxyNodeConfig, ProdxyOperationConfig, ProdxyGraphConfig
 
@@ -187,7 +188,13 @@ class TestMinimalGraphBuild(unittest.TestCase):
             graph.compiled_graph.get_graph().print_ascii()
         except Exception as e:
             self.fail(f"Graph ASCII visualization failed: {e}")
-        
+    
+    def test_graph_load_yaml(self):
+        """Test that the graph can be visualized (ASCII representation)"""
+        graph = ProdxyGraph.from_yaml(
+            os.path.join(os.path.dirname(__file__), "mock_builder_config.yaml")
+        )
+        self.assertIsNotNone(graph)
 
 
 if __name__ == "__main__":

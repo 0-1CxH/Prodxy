@@ -1,3 +1,4 @@
+import os
 import unittest
 from collections import Counter
 from prodxy.operation.attribute_sampler import (
@@ -252,6 +253,12 @@ class TestProdxyPropertyLibrary(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             library.sample_items("color", "invalid_category", count=1)
+    
+    def test_load_from_yaml(self):
+        pl = ProdxyPropertyLibrary.load_from_yaml(
+            os.path.join(os.path.dirname(__file__), "mock_property_config.yaml")
+        )
+        self.assertIsNotNone(pl)
 
 if __name__ == '__main__':
     unittest.main()

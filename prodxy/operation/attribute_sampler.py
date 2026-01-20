@@ -1,5 +1,6 @@
-from typing import List, Dict
+import yaml
 import random
+from typing import List, Dict
 from datetime import datetime, date, time, timedelta
 from dataclasses import dataclass
 
@@ -277,6 +278,13 @@ class ProdxyPropertyLibrary:
         )
 
         return cls(config)
+
+    @classmethod
+    def load_from_yaml(cls, yaml_path: str):
+        """Load configuration from YAML file"""
+        with open(yaml_path, "r") as f:
+            data = yaml.safe_load(f)
+        return cls.load_from_dict(data)
 
     def _get_property(self, property_name):
         """Get property by name, raise ValueError if not found"""
