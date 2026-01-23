@@ -150,6 +150,8 @@ class ProdxyGraph:
 
     def __init__(self, graph_config: ProdxyGraphConfig):
         self.graph_config = graph_config
+        self.name = graph_config.name
+        self.node_configs = graph_config.node_configs
         self.graph = StateGraph(ProdxyGlobalState)
 
         all_nodes = []

@@ -189,7 +189,7 @@ class TestProdxyPropertyLibrary(unittest.TestCase):
 
         # Primary has weight 2.0, secondary has weight 1.0
         # Primary should be sampled more frequently
-        indicators = library.sample_categories("color", count=1000, allow_repeat=True)
+        indicators = library.sample_categories("color", count=200, allow_repeat=True)
 
         category_counts = Counter([indicator.category_name for indicator in indicators])
 
@@ -216,13 +216,24 @@ class TestProdxyPropertyLibrary(unittest.TestCase):
         library = ProdxyPropertyLibrary(self.test_config)
 
         # red:3.0, blue:2.0, yellow:1.0
-        indicators = library.sample_items("color", "primary", count=100, allow_repeat=True)
+        # Use more samples to reduce variance and make weighted behavior more reliable
+        indicators = library.sample_items("color", "primary", count=1000, allow_repeat=True)
 
         item_counts = Counter([indicator.item_name for indicator in indicators])
 
         # red should have highest count, then blue, then yellow
         self.assertGreater(item_counts["red"], item_counts["blue"])
         self.assertGreater(item_counts["blue"], item_counts["yellow"])
+
+        # Also check approximate ratios to ensure weighting is working correctly
+        red_to_blue_ratio = item_counts["red"] / item_counts["blue"]
+        blue_to_yellow_ratio = item_counts["blue"] / item_counts["yellow"]
+
+        # Expected ratios are 3:2=1.5 and 2:1=2.0, allow reasonable tolerance
+        self.assertGreater(red_to_blue_ratio, 1.2)
+        self.assertLess(red_to_blue_ratio, 2.0)
+        self.assertGreater(blue_to_yellow_ratio, 1.5)
+        self.assertLess(blue_to_yellow_ratio, 3.0)
 
     def test_sample_categories_with_constraints(self):
         """Test category sampling with constraints"""

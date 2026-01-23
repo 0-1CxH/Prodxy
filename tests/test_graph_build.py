@@ -69,7 +69,6 @@ class TestMinimalGraphBuild(unittest.TestCase):
             "arg1": 1,
             "arg2": 2,
         })
-        print(result)
 
         # Verify result structure
         self.assertIsNotNone(result)
@@ -190,7 +189,6 @@ class TestMinimalGraphBuild(unittest.TestCase):
             self.fail(f"Graph ASCII visualization failed: {e}")
     
     def test_graph_load_yaml(self):
-        """Test that the graph can be visualized (ASCII representation)"""
         graph = ProdxyGraph.from_yaml(
             os.path.join(os.path.dirname(__file__), "mock_builder_config.yaml")
         )
