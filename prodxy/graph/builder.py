@@ -196,8 +196,10 @@ class ProdxyGraph:
         
 
         self.compiled_graph = self.graph.compile()
+        self.pre_loaded_data = {}
     
     def __call__(self, input_data):
+        input_data.update(self.pre_loaded_data)
         global_state = ProdxyGlobalState(
             data=input_data
         )

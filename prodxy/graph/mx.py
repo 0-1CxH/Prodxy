@@ -119,6 +119,10 @@ class ProdxyMxBuilder:
         if constrains is not None:
             current_prodxy_property_library_config['constrains'] = constrains
         self.property_library = ProdxyPropertyLibrary.load_from_dict(current_prodxy_property_library_config)
+
+        # load the property library to graphs' data
+        for pg in self.prodxy_graphs:
+            pg.pre_loaded_data.update({"_prodxy_property_library": self.property_library})
         
 
     @classmethod
