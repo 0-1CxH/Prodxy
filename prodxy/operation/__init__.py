@@ -2,6 +2,7 @@ from .judge_func import JudgePrimitives
 from .llm_request import LLMRequest
 from .relative_time import RelativeTimePrimitives
 from .attribute_sampler import ValueGeneratorPrimitives, ProdxyPropertyLibrary
+from .field_analyzer import FieldCentricAnalyzer
 
 OperationMap = {
     "judge:equal": JudgePrimitives.equal,
