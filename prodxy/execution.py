@@ -23,12 +23,18 @@ class ProdxyMxExecutor:
                 for file in os.listdir(self.args.input):
                     if file.endswith(".json"):
                         with open(os.path.join(self.args.input, file), 'r') as f:
-                            self.input_data.append(json.load(f))
+                            self.input_data.append({
+                                "content": json.load(f),
+                                "filename": os.path.splitext(file)[0]  # without .json
+                            })
             elif os.path.isfile(self.args.input) and self.args.input.endswith(".jsonl"):
                 self.input_mode = "line"
                 with open(self.args.input, 'r') as f:
-                    for line in f:
-                        self.input_data.append(json.loads(line))
+                    for line_num, line in enumerate(f):
+                        self.input_data.append({
+                            "content": json.loads(line),
+                            "line_num": line_num
+                        })
             else:
                 raise ValueError(f"unknown input: {self.args.input}")
         else:
@@ -49,14 +55,14 @@ class ProdxyMxExecutor:
                 self.output_mode = "file"
                 # create folder if not exists
                 os.makedirs(self.args.output, exist_ok=True)
-                # create new file by id and write
-                self.output_handle = lambda i,x: open(os.path.join(self.args.output, f"{i}.json"), 'w').write(json.dumps(x))
+                # create new file by identifier and write
+                self.output_handle = lambda identifier,x: open(os.path.join(self.args.output, f"{identifier}.json"), 'w').write(json.dumps(x))
         else:
             raise ValueError(f"unknown output: {self.args.output}")
     
     def _build_mx(self):
         self.mx = ProdxyMxBuilder.load_from_yaml(self.args.mx_config)
-        self.graph_callable = self.mx(self.args.variant)
+        self.graph_callable = self.mx[self.args.variant]
     
     async def __call__(self):
         # use self.args.parallelism to control the max concurrency
@@ -70,34 +76,52 @@ class ProdxyMxExecutor:
         # Create semaphore to limit concurrency
         semaphore = asyncio.Semaphore(parallelism)
 
-        async def process_item(i, input_item):
+        async def process_item(identifier, input_content):
             async with semaphore:
                 try:
                     # Execute the graph callable
-                    result = await self.graph_callable(input_item)
-
+                    global_state = await self.graph_callable(input_content)
+                    global_state.data.pop('_prodxy_property_library')
+                    
+                    if self.args.dump_trace:
+                        result = {
+                            "global_state": global_state.data, 
+                            "trace": global_state.prodxy_trace
+                        }
+                    else:
+                        result = global_state.data
+                        
                     # Handle output based on mode
-                    if self.output_mode == "null":  
+                    if self.output_mode == "null":
                         self.output_handle(result)
                     elif self.output_mode == "line":
                         self.output_handle(result)
                     elif self.output_mode == "file":
-                        self.output_handle(i, result)
+                        self.output_handle(identifier, result)
                 except Exception as e:
                     # Log error but continue processing other items
-                    print(f"Error processing input {i}: {e}")
+                    print(f"Error processing input {identifier}: {e}")
 
         # Create tasks based on input mode
         tasks = []
         if self.input_mode == "null":
             # Execute graph_callable self.args.input times with no parameters
             for i in range(self.args.input):
-                task = asyncio.create_task(process_item(i, None))
+                task = asyncio.create_task(process_item(i, {}))
                 tasks.append(task)
-        elif self.input_mode == "file" or self.input_mode == "line":
-            # Process each input item
-            for i, input_item in enumerate(self.input_data):
-                task = asyncio.create_task(process_item(i, input_item))
+        elif self.input_mode == "file":
+            # Process each input file
+            for item in self.input_data:
+                identifier = item["filename"]
+                input_content = item["content"]
+                task = asyncio.create_task(process_item(identifier, input_content))
+                tasks.append(task)
+        elif self.input_mode == "line":
+            # Process each input line
+            for item in self.input_data:
+                identifier = item["line_num"]  # integer line number
+                input_content = item["content"]
+                task = asyncio.create_task(process_item(identifier, input_content))
                 tasks.append(task)
 
         # Wait for all tasks to complete
@@ -128,6 +152,8 @@ def main():
                         help='Output: path to file (.jsonl) or directory (for .json files)')
     parser.add_argument('--parallelism', '-p', type=int, default=1,
                         help='Maximum parallel executions (default: 1)')
+    parser.add_argument('--dump-trace', '-d', action='store_true',
+                        help='whether to save the trace info to output')
 
     args = parser.parse_args()
 

@@ -185,7 +185,7 @@ class TestMinimalGraphBuild(unittest.IsolatedAsyncioTestCase):
         # Test that ASCII representation can be generated
         # This is mainly to ensure the graph structure is valid
         try:
-            graph.compiled_graph.get_graph().print_ascii()
+            graph.compiled_graph.get_graph().draw_ascii()
         except Exception as e:
             print(f"Graph ASCII visualization failed: {e}")
     

@@ -64,23 +64,26 @@ class TestProdxyMxBuilderLoadFromYaml(unittest.IsolatedAsyncioTestCase):
         builder = ProdxyMxBuilder.load_from_yaml(yaml_path)
 
         # Test calling with existing variant 'a'
-        graph_a_callable = builder('a')
+        graph_a_callable = builder['a']
         self.assertIsNotNone(graph_a_callable)
         self.assertTrue(callable(graph_a_callable))
 
         # Test calling with existing variant 'b'
-        graph_b_callable = builder('b')
+        graph_b_callable = builder['b']
         self.assertIsNotNone(graph_b_callable)
         self.assertTrue(callable(graph_b_callable))
 
         # Test calling with '_default' variant
-        default_callable = builder('_default')
+        default_callable = builder['_default']
         self.assertIsNotNone(default_callable)
         self.assertTrue(callable(default_callable))
 
         # Test calling with non-existent variant
-        non_existent = builder('non_existent')
-        self.assertIsNone(non_existent)
+        try:
+            non_existent = builder['non_existent']
+            self.fail('this should not be obtained')
+        except:
+            pass
 
         # Test executing variant 'a' with input data
         input_data = {"arg1": "test", "arg2": "test"}

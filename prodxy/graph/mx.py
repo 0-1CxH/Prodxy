@@ -128,10 +128,11 @@ class ProdxyMxBuilder:
         for pg in self.prodxy_graphs:
             pg.pre_loaded_data.update({"_prodxy_property_library": self.property_library})
     
-    def __call__(self, variant_name):
+    def __getitem__(self, variant_name):
         variant_index = self.variant_name_to_index_map.get(variant_name)
         if variant_index is not None and variant_index < len(self.prodxy_graphs):
             return self.prodxy_graphs[variant_index]
+        raise ValueError(f"Invalid variant name {variant_name}")
         
 
     @classmethod

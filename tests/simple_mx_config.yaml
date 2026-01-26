@@ -6,4 +6,24 @@ mx_node_configs:
         read_paths:
           boundary: "@(1,10)"
           is_integer: "@True"
+          count: "@5"
+        write_path: "$.target"
+    operations(b):
+      - main_op_name: "valgen:range"
+        condition_op_name: "condition:exist"
+        read_paths:
+          boundary: "@(3,6)"
+          is_integer: "@True"
+          count: "@1"
+        write_path: "$.source"
+    conditions(b):
+      true: "node2"
+      false: "node2"
+  - name: "node2"
+    operations(b):
+      - main_op_name: "judge:include"
+        condition_op_name: "condition:identity"
+        read_paths:
+          source: "$.source"
+          target: "$.target"
         write_path: "$.result"
