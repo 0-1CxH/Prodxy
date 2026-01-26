@@ -2,10 +2,11 @@
 
 import os
 import unittest
+import asyncio
 from prodxy.graph.mx import ProdxyMxBuilder
 
 
-class TestProdxyMxBuilderLoadFromYaml(unittest.TestCase):
+class TestProdxyMxBuilderLoadFromYaml(unittest.IsolatedAsyncioTestCase):
     def test_load_from_yaml_complete_config(self):
         # Load the same mock MX config used in the transform test
         yaml_path = os.path.join(os.path.dirname(__file__), "mock_mx_builder_config.yaml")
@@ -57,7 +58,7 @@ class TestProdxyMxBuilderLoadFromYaml(unittest.TestCase):
         # for _ in [a_graph, b_graph, default_graph]:
         #     _.compiled_graph.get_graph().print_ascii()
     
-    def test_mx_call(self):
+    async def test_mx_call(self):
         # Load the mock MX config
         yaml_path = os.path.join(os.path.dirname(__file__), "mock_mx_builder_config.yaml")
         builder = ProdxyMxBuilder.load_from_yaml(yaml_path)
@@ -83,7 +84,7 @@ class TestProdxyMxBuilderLoadFromYaml(unittest.TestCase):
 
         # Test executing variant 'a' with input data
         input_data = {"arg1": "test", "arg2": "test"}
-        result_a = graph_a_callable(input_data)
+        result_a = await graph_a_callable(input_data)
         self.assertIn("result1", result_a.data)
         self.assertEqual(result_a.data["result1"], True)  # judge:equal should return True
         self.assertIn("result2", result_a.data)
@@ -92,7 +93,7 @@ class TestProdxyMxBuilderLoadFromYaml(unittest.TestCase):
 
         # Test executing variant 'b' with input data
         input_data = {"arg2": "test", "arg1": ["test", "other"]}
-        result_b = graph_b_callable(input_data)
+        result_b = await graph_b_callable(input_data)
         self.assertIn("result1", result_b.data)
         self.assertEqual(result_b.data["result1"], True)  # judge:include should return True
         self.assertNotIn("result2", result_b.data)
@@ -102,7 +103,7 @@ class TestProdxyMxBuilderLoadFromYaml(unittest.TestCase):
 
         # Test executing '_default' variant
         input_data = {"arg1": "test", "arg2": ["test", "other"]}
-        result_default = default_callable(input_data)
+        result_default = await default_callable(input_data)
         self.assertIn("result1", result_default.data)
         self.assertEqual(result_default.data["result1"], False)  # judge:include should return False
         

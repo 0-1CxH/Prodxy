@@ -1,11 +1,12 @@
 import os
 import unittest
+import asyncio
 from prodxy.graph.builder import ProdxyGraph, ProdxyNodeConfig, ProdxyOperationConfig, ProdxyGraphConfig
 
 
-class TestMinimalGraphBuild(unittest.TestCase):
+class TestMinimalGraphBuild(unittest.IsolatedAsyncioTestCase):
 
-    def test_graph_execution(self):
+    async def test_graph_execution(self):
         """Test the minimal graph execution functionality"""
         graph = ProdxyGraph(
             ProdxyGraphConfig(
@@ -65,7 +66,7 @@ class TestMinimalGraphBuild(unittest.TestCase):
         self.assertIsNotNone(graph_structure)
 
         # Test graph execution
-        result = graph({
+        result = await graph({
             "arg1": 1,
             "arg2": 2,
         })

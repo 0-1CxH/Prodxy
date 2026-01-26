@@ -12,6 +12,7 @@ There are some packages required:
 
 ```
 langgraph
+asyncio
 jsonpath_ng
 ```
 

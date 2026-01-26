@@ -1,6 +1,7 @@
 import os
 import json
 import concurrent.futures
+import asyncio
 
 from prodxy.graph import ProdxyMxBuilder
 
@@ -36,7 +37,7 @@ class ProdxyMxExecutor:
     def _prepare_output_handle(self):
         if not self.args.output:
             self.output_mode = "null"
-            self.output_handle = lambda x: None
+            self.output_handle = lambda x: print(x)
         elif isinstance(self.args.output, str):
             if self.args.output.endswith(".jsonl"):
                 self.output_mode = "line"
@@ -57,94 +58,83 @@ class ProdxyMxExecutor:
         self.mx = ProdxyMxBuilder.load_from_yaml(self.args.mx_config)
         self.graph_callable = self.mx(self.args.variant)
     
-    def __call__(self):
-        # use self.args.parallelism and self.args.threading for process/thread pool workers
+    async def __call__(self):
+        # use self.args.parallelism to control the max concurrency
         # use self.input_data for each task graph's input
         # run self.graph_callable and collect its trace
         # log task trace and save along with output to self.ouput_handle
-
+        
         # Prepare execution based on parallelism settings
-        max_workers = getattr(self.args, 'parallelism', 1)
-        use_threads = getattr(self.args, 'threading', False)
+        parallelism = getattr(self.args, 'parallelism', 1)
 
-        # Create executor
-        if use_threads:
-            executor_cls = concurrent.futures.ThreadPoolExecutor
-        else:
-            executor_cls = concurrent.futures.ProcessPoolExecutor
+        # Create semaphore to limit concurrency
+        semaphore = asyncio.Semaphore(parallelism)
 
-        # Execute tasks
-        with executor_cls(max_workers=max_workers) as executor:
-            if self.input_mode == "null":
-                # Execute graph_callable self.args.input times with no parameters
-                futures = []
-                for i in range(self.args.input):
-                    future = executor.submit(self.graph_callable, None)
-                    futures.append((i, future))
+        async def process_item(i, input_item):
+            async with semaphore:
+                try:
+                    # Execute the graph callable
+                    result = await self.graph_callable(input_item)
 
-                # Collect results
-                for i, future in futures:
-                    try:
-                        result = future.result()
-                        if self.output_mode == "null":
-                            print(result)
-                        elif self.output_mode == "line":
-                            self.output_handle(result)
-                        elif self.output_mode == "file":
-                            self.output_handle((i, result))
-                    except Exception as e:
-                        # Log error but continue processing other items
-                        print(f"Error processing null input {i}: {e}")
-                        continue
+                    # Handle output based on mode
+                    if self.output_mode == "null":  
+                        self.output_handle(result)
+                    elif self.output_mode == "line":
+                        self.output_handle(result)
+                    elif self.output_mode == "file":
+                        self.output_handle(i, result)
+                except Exception as e:
+                    # Log error but continue processing other items
+                    print(f"Error processing input {i}: {e}")
 
-            elif self.input_mode == "file" or self.input_mode == "line":
-                # Process each input item
-                futures = []
-                for i, input_item in enumerate(self.input_data):
-                    future = executor.submit(self.graph_callable, input_item)
-                    futures.append((i, future))
+        # Create tasks based on input mode
+        tasks = []
+        if self.input_mode == "null":
+            # Execute graph_callable self.args.input times with no parameters
+            for i in range(self.args.input):
+                task = asyncio.create_task(process_item(i, None))
+                tasks.append(task)
+        elif self.input_mode == "file" or self.input_mode == "line":
+            # Process each input item
+            for i, input_item in enumerate(self.input_data):
+                task = asyncio.create_task(process_item(i, input_item))
+                tasks.append(task)
 
-                # Collect results
-                for i, future in futures:
-                    try:
-                        result = future.result()
-                        if self.output_mode == "null":
-                            continue
-                        elif self.output_mode == "line":
-                            self.output_handle(result)
-                        elif self.output_mode == "file":
-                            self.output_handle((i, result))
-                    except Exception as e:
-                        # Log error but continue processing other items
-                        print(f"Error processing input {i}: {e}")
-                        continue
+        # Wait for all tasks to complete
+        await asyncio.gather(*tasks, return_exceptions=True)
 
-if __name__ == "__main__":
+
+def parse_input_arg(value):
+    """Parse input argument: if it's a number, return int, else return string."""
+    try:
+        # Try to convert to integer
+        return int(value)
+    except ValueError:
+        # Return as string
+        return value
+
+
+def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="Execute Prodxy MX workflow")
-    parser.add_argument("--input", required=True,
-                        help="Input specification: integer for null input count, directory path for JSON files, or .jsonl file path")
-    parser.add_argument("--output",
-                        help="Output specification: .jsonl file path for line output, directory path for file output, or omit for no output")
-    parser.add_argument("--mx-config", required=True, dest="mx_config",
-                        help="Path to MX configuration YAML file")
-    parser.add_argument("--variant", default="default",
-                        help="Variant name to use from MX configuration (default: default)")
-    parser.add_argument("--parallelism", type=int, default=1,
-                        help="Number of parallel workers (default: 1)")
-    parser.add_argument("--threading", action="store_true",
-                        help="Use threading instead of multiprocessing")
+    parser = argparse.ArgumentParser(description='Execute Prodxy MX graph')
+    parser.add_argument('--mx-config', '-m', required=True,
+                        help='Path to MX configuration YAML file')
+    parser.add_argument('--variant', '-v', required=True,
+                        help='Variant name to use')
+    parser.add_argument('--input', '-i', required=True, type=parse_input_arg,
+                        help='Input: integer for null mode, or path to file/directory')
+    parser.add_argument('--output', '-o', default=None,
+                        help='Output: path to file (.jsonl) or directory (for .json files)')
+    parser.add_argument('--parallelism', '-p', type=int, default=1,
+                        help='Maximum parallel executions (default: 1)')
 
     args = parser.parse_args()
 
-    # Convert input to appropriate type
-    try:
-        # Try to parse as integer first (for null input mode)
-        args.input = int(args.input)
-    except ValueError:
-        # Keep as string for file/directory paths
-        pass
-
+    # Create executor and run
     executor = ProdxyMxExecutor(args)
-    executor()
+    asyncio.run(executor())
+
+
+if __name__ == "__main__":
+    main()        

@@ -2,11 +2,8 @@ mx_node_configs:
   - name: "node1"
     operations(a):
       - main_op_name: "valgen:range"
-        condition_op_name: "condition:identity"
+        condition_op_name: "condition:exist"
         read_paths:
           boundary: "@(1,10)"
           is_integer: "@True"
         write_path: "$.result"
-    conditions(a):
-      true: "_end"
-      false: "_end"

@@ -131,7 +131,7 @@ class ProdxyMxBuilder:
     def __call__(self, variant_name):
         variant_index = self.variant_name_to_index_map.get(variant_name)
         if variant_index is not None and variant_index < len(self.prodxy_graphs):
-            return self.prodxy_graphs[variant_index].__call__
+            return self.prodxy_graphs[variant_index]
         
 
     @classmethod
