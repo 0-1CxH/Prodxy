@@ -49,7 +49,7 @@ class ProdxyMxExecutor:
                 # create folder if not exists
                 os.makedirs(self.args.output, exist_ok=True)
                 # create new file by id and write
-                self.output_handle = lambda (i,x): open(os.path.join(self.args.output, f"{i}.json"), 'w').write(json.dumps(x))
+                self.output_handle = lambda i,x: open(os.path.join(self.args.output, f"{i}.json"), 'w').write(json.dumps(x))
         else:
             raise ValueError(f"unknown output: {self.args.output}")
     
@@ -87,7 +87,7 @@ class ProdxyMxExecutor:
                     try:
                         result = future.result()
                         if self.output_mode == "null":
-                            continue
+                            print(result)
                         elif self.output_mode == "line":
                             self.output_handle(result)
                         elif self.output_mode == "file":
@@ -119,3 +119,32 @@ class ProdxyMxExecutor:
                         print(f"Error processing input {i}: {e}")
                         continue
 
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Execute Prodxy MX workflow")
+    parser.add_argument("--input", required=True,
+                        help="Input specification: integer for null input count, directory path for JSON files, or .jsonl file path")
+    parser.add_argument("--output",
+                        help="Output specification: .jsonl file path for line output, directory path for file output, or omit for no output")
+    parser.add_argument("--mx-config", required=True, dest="mx_config",
+                        help="Path to MX configuration YAML file")
+    parser.add_argument("--variant", default="default",
+                        help="Variant name to use from MX configuration (default: default)")
+    parser.add_argument("--parallelism", type=int, default=1,
+                        help="Number of parallel workers (default: 1)")
+    parser.add_argument("--threading", action="store_true",
+                        help="Use threading instead of multiprocessing")
+
+    args = parser.parse_args()
+
+    # Convert input to appropriate type
+    try:
+        # Try to parse as integer first (for null input mode)
+        args.input = int(args.input)
+    except ValueError:
+        # Keep as string for file/directory paths
+        pass
+
+    executor = ProdxyMxExecutor(args)
+    executor()
