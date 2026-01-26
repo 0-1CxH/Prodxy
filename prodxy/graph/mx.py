@@ -101,12 +101,12 @@ class ProdxyMxBuilder:
 
         self.prodxy_graphs = []
         variants = transform_mx_config_to_standard(mx_node_configs)
-        self.varient_name_to_index_map = {}
-        varient_index = 0
-        for varient_name, varient_conf in variants.items():
+        self.variant_name_to_index_map = {}
+        variant_index = 0
+        for variant_name, variant_conf in variants.items():
             current_prodxy_graph_config = {
-                "node_configs": varient_conf,
-                "name": varient_name,
+                "node_configs": variant_conf,
+                "name": variant_name,
             }
             if start_node_placeholder:
                 current_prodxy_graph_config['start_node_placeholder'] = start_node_placeholder
@@ -114,8 +114,8 @@ class ProdxyMxBuilder:
                 current_prodxy_graph_config['end_node_placeholder'] = end_node_placeholder
             
             self.prodxy_graphs.append(ProdxyGraph.from_dict(current_prodxy_graph_config))
-            self.varient_name_to_index_map[varient_name] = varient_index
-            varient_index += 1
+            self.variant_name_to_index_map[variant_name] = variant_index
+            variant_index += 1
         
         current_prodxy_property_library_config = {}
         if properties is not None:
@@ -128,10 +128,10 @@ class ProdxyMxBuilder:
         for pg in self.prodxy_graphs:
             pg.pre_loaded_data.update({"_prodxy_property_library": self.property_library})
     
-    def __call__(self, varient_name):
-        varient_index = self.varient_name_to_index_map.get(varient_name)
-        if varient_index is not None and varient_index < len(self.prodxy_graphs):
-            return self.prodxy_graphs[varient_index].__call__
+    def __call__(self, variant_name):
+        variant_index = self.variant_name_to_index_map.get(variant_name)
+        if variant_index is not None and variant_index < len(self.prodxy_graphs):
+            return self.prodxy_graphs[variant_index].__call__
         
 
     @classmethod
