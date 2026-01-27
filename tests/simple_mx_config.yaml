@@ -2,7 +2,7 @@ mx_node_configs:
   - name: "node1"
     operations(a):
       - main_op_name: "valgen:range"
-        condition_op_name: "condition:exist"
+        condition_op_name: "condition:true"
         read_paths:
           boundary: "@(1,10)"
           is_integer: "@True"
@@ -10,10 +10,9 @@ mx_node_configs:
         write_path: "$.target"
     conditions(a):
       true: "node2"
-      false: "node2"
     operations(b):
       - main_op_name: "valgen:range"
-        condition_op_name: "condition:exist"
+        condition_op_name: "condition:true"
         read_paths:
           boundary: "@(3,6)"
           is_integer: "@True"
@@ -21,20 +20,29 @@ mx_node_configs:
         write_path: "$.source"
     conditions(b):
       true: "node2"
-      false: "node2"
   - name: "node2"
     operations(a):
       - main_op_name: "property:sample"
-        condition_op_name: "condition:identity"
+        condition_op_name: "condition:true"
         read_paths:
-          property_name: "@date_alias"
+          property_name: "date_alias"
         write_path: "$.category"
+    conditions(a):
+      true: "node3"
     operations(b):
       - main_op_name: "judge:include"
         condition_op_name: "condition:identity"
         read_paths:
           source: "$.source"
           target: "$.target"
+        write_path: "$.comparison"
+  - name: "node3"
+    operations(a):
+      - main_op_name: "relative:date"
+        condition_op_name: "condition:true"
+        read_paths:
+          reference_date: "2026-01-01"
+          shift: "$.category"
         write_path: "$.result"
 properties:
   - property_name: date_alias

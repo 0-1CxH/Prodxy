@@ -1,7 +1,7 @@
 import os
 import json
-import concurrent.futures
 import asyncio
+from tqdm.asyncio import tqdm
 
 from prodxy.graph import ProdxyMxBuilder
 
@@ -43,7 +43,7 @@ class ProdxyMxExecutor:
     def _prepare_output_handle(self):
         if not self.args.output:
             self.output_mode = "null"
-            self.output_handle = lambda x: print(x)
+            self.output_handle = lambda x: None
         elif isinstance(self.args.output, str):
             if self.args.output.endswith(".jsonl"):
                 self.output_mode = "line"
@@ -71,7 +71,9 @@ class ProdxyMxExecutor:
         # log task trace and save along with output to self.ouput_handle
         
         # Prepare execution based on parallelism settings
-        parallelism = getattr(self.args, 'parallelism', 1)
+        parallelism = self.args.parallelism
+        if parallelism <= 0:
+            parallelism = os.cpu_count()
 
         # Create semaphore to limit concurrency
         semaphore = asyncio.Semaphore(parallelism)
@@ -124,8 +126,16 @@ class ProdxyMxExecutor:
                 task = asyncio.create_task(process_item(identifier, input_content))
                 tasks.append(task)
 
-        # Wait for all tasks to complete
-        await asyncio.gather(*tasks, return_exceptions=True)
+        # Wait for all tasks to complete with progress bar
+        # tqdm doesn't support return_exceptions, so we handle it manually
+        results = []
+        for task in tqdm.as_completed(tasks, desc="Processing: ", unit="item"):
+            try:
+                result = await task
+                results.append(result)
+            except Exception as e:
+                # Log error but continue processing other items
+                results.append(e)
 
 
 def parse_input_arg(value):
@@ -150,8 +160,8 @@ def main():
                         help='Input: integer for null mode, or path to file/directory')
     parser.add_argument('--output', '-o', default=None,
                         help='Output: path to file (.jsonl) or directory (for .json files)')
-    parser.add_argument('--parallelism', '-p', type=int, default=1,
-                        help='Maximum parallel executions (default: 1)')
+    parser.add_argument('--parallelism', '-p', type=int, default=0,
+                        help='Maximum parallel executions (default: cpu core count)')
     parser.add_argument('--dump-trace', '-d', action='store_true',
                         help='whether to save the trace info to output')
 

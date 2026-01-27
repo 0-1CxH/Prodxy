@@ -118,7 +118,7 @@ class ProdxyNode:
             elif argpath.startswith('$'): # json path
                 arg_values[argkey] = global_state_data[argpath]
             else:
-                raise ValueError(f"unknown argpath {argpath}")
+                arg_values[argkey] = argpath
             
         
         # Execute operation
