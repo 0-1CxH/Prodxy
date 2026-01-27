@@ -1,0 +1,446 @@
+mx_node_configs:
+  - name: "general_destination_city"
+    operations(a):
+      - main_op_name: "property:sample_or_none"
+        condition_op_name: "condition:has_value"
+        read_paths:
+          property_name: "city"
+          none_probability: 0.1
+        write_path: "$.destination_city"
+    conditions(a):
+      false: "finalization"
+      true: "general_source_city"
+    operations(b):
+      - main_op_name: "field:extract_destination"
+        condition_op_name: "condition:has_value"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+        write_path: "$.destination_city"
+    conditions(b):
+      false: "finalization"
+      true: "general_source_city"
+
+  - name: "general_source_city"
+    operations(a):
+      - main_op_name: "property:sample_different_or_none"
+        condition_op_name: "condition:true"
+        read_paths:
+          property_name: "city"
+          exclude_value: "$.destination_city"
+          none_probability: 0.3
+        write_path: "$.source_city"
+    conditions(a):
+      true: "departure_date_format"
+    operations(b):
+      - main_op_name: "field:extract_source"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+        write_path: "$.source_city"
+    conditions(b):
+      true: "departure_date_format"
+
+  - name: "departure_date_format"
+    operations(a):
+      - main_op_name: "valgen:enum"
+        condition_op_name: "condition:set_flag"
+        read_paths:
+          choices: ["relative", "absolute", "range"]
+          weights: [0.4, 0.4, 0.2]
+        write_path: "$.date_format"
+    conditions(a):
+      relative: "relative_departure_date"
+      absolute: "absolute_departure_date"
+      range: "departure_date_range"
+    operations(b):
+      - main_op_name: "field:determine_date_format"
+        condition_op_name: "condition:set_flag"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+        write_path: "$.date_format"
+    conditions(b):
+      relative: "relative_departure_date"
+      absolute: "absolute_departure_date"
+      range: "departure_date_range"
+
+  - name: "relative_departure_date"
+    operations(a):
+      - main_op_name: "property:sample"
+        condition_op_name: "condition:true"
+        read_paths:
+          property_name: "relative_date"
+        write_path: "$.departure_date"
+    conditions(a):
+      true: "specific_method"
+    operations(b):
+      - main_op_name: "field:validate_relative_date"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+          expected_format: "$.date_format"
+        write_path: "$.validation_result"
+    conditions(b):
+      true: "specific_method"
+
+  - name: "absolute_departure_date"
+    operations(a):
+      - main_op_name: "valgen:date"
+        condition_op_name: "condition:true"
+        read_paths:
+          boundary: "@(2026-01-01,2027-12-31)"
+        write_path: "$.departure_date"
+    conditions(a):
+      true: "specific_method"
+    operations(b):
+      - main_op_name: "field:validate_absolute_date"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+          expected_format: "$.date_format"
+        write_path: "$.validation_result"
+    conditions(b):
+      true: "specific_method"
+
+  - name: "departure_date_range"
+    operations(a):
+      - main_op_name: "valgen:date_range"
+        condition_op_name: "condition:true"
+        read_paths:
+          boundary: "@(2026-01-01,2027-12-31)"
+          range_days: "@(1,30)"
+        write_path: "$.departure_date"
+    conditions(a):
+      true: "specific_method"
+    operations(b):
+      - main_op_name: "field:validate_date_range"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+          expected_format: "$.date_format"
+        write_path: "$.validation_result"
+    conditions(b):
+      true: "specific_method"
+
+  - name: "specific_method"
+    operations(a):
+      - main_op_name: "valgen:enum"
+        condition_op_name: "condition:set_flag"
+        read_paths:
+          choices: ["implicit", "explicit"]
+          weights: [0.3, 0.7]
+        write_path: "$.method_description"
+    conditions(a):
+      implicit: "implicit_method"
+      explicit: "explicit_method"
+    operations(b):
+      - main_op_name: "field:determine_method_type"
+        condition_op_name: "condition:set_flag"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+        write_path: "$.method_description"
+    conditions(b):
+      implicit: "implicit_method"
+      explicit: "explicit_method"
+
+  - name: "explicit_method"
+    operations(a):
+      - main_op_name: "valgen:enum"
+        condition_op_name: "condition:set_flag"
+        read_paths:
+          choices: ["train", "flight"]
+          weights: [0.5, 0.5]
+        write_path: "$.method_name"
+    conditions(a):
+      train: "train_personal_demands"
+      flight: "flight_personal_demands"
+    operations(b):
+      - main_op_name: "field:extract_explicit_method"
+        condition_op_name: "condition:set_flag"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+        write_path: "$.method_name"
+    conditions(b):
+      train: "train_personal_demands"
+      flight: "flight_personal_demands"
+
+  - name: "implicit_method"
+    operations(a):
+      - main_op_name: "valgen:enum"
+        condition_op_name: "condition:set_flag"
+        read_paths:
+          choices: ["train", "flight"]
+          weights: [0.5, 0.5]
+        write_path: "$.method_name"
+    conditions(a):
+      train: "specific_train_stations"
+      flight: "specific_airports"
+    operations(b):
+      - main_op_name: "field:determine_implicit_method"
+        condition_op_name: "condition:set_flag"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+        write_path: "$.method_name"
+    conditions(b):
+      train: "specific_train_stations"
+      flight: "specific_airports"
+
+  - name: "specific_train_stations"
+    operations(a):
+      - main_op_name: "property:sample_stations"
+        condition_op_name: "condition:true"
+        read_paths:
+          property_name: "train_station"
+          destination_city: "$.destination_city"
+          source_city: "$.source_city"
+        write_path: "$.stations"
+    conditions(a):
+      true: "train_personal_demands"
+    operations(b):
+      - main_op_name: "field:validate_train_stations"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+          expected_cities: {"destination": "$.destination_city", "source": "$.source_city"}
+        write_path: "$.validation_result"
+    conditions(b):
+      true: "train_personal_demands"
+
+  - name: "specific_airports"
+    operations(a):
+      - main_op_name: "property:sample_airports"
+        condition_op_name: "condition:true"
+        read_paths:
+          property_name: "airport"
+          destination_city: "$.destination_city"
+          source_city: "$.source_city"
+        write_path: "$.airports"
+    conditions(a):
+      true: "flight_personal_demands"
+    operations(b):
+      - main_op_name: "field:validate_airports"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+          expected_cities: {"destination": "$.destination_city", "source": "$.source_city"}
+        write_path: "$.validation_result"
+    conditions(b):
+      true: "flight_personal_demands"
+
+  - name: "train_personal_demands"
+    operations(a):
+      - main_op_name: "property:sample_multiple_or_none"
+        condition_op_name: "condition:true"
+        read_paths:
+          property_name: "pref_for_train"
+          max_count: 3
+        write_path: "$.personal_demands"
+    conditions(a):
+      true: "finalization"
+    operations(b):
+      - main_op_name: "field:validate_train_demands"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+          expected_tool: "train_search"
+        write_path: "$.validation_result"
+    conditions(b):
+      true: "finalization"
+
+  - name: "flight_personal_demands"
+    operations(a):
+      - main_op_name: "property:sample_multiple_or_none"
+        condition_op_name: "condition:true"
+        read_paths:
+          property_name: "pref_for_flight"
+          max_count: 3
+        write_path: "$.personal_demands"
+    conditions(a):
+      true: "finalization"
+    operations(b):
+      - main_op_name: "field:validate_flight_demands"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+          expected_tool: "flight_search"
+        write_path: "$.validation_result"
+    conditions(b):
+      true: "finalization"
+
+  - name: "finalization"
+    operations(a):
+      - main_op_name: "llm:synthesize_query"
+        condition_op_name: "condition:true"
+        read_paths:
+          destination_city: "$.destination_city"
+          source_city: "$.source_city"
+          departure_date: "$.departure_date"
+          method_info: {"description": "$.method_description", "name": "$.method_name"}
+          stations: "$.stations"
+          airports: "$.airports"
+          personal_demands: "$.personal_demands"
+        write_path: "$.synthetic_query"
+    conditions(a):
+      true: "_end"
+    operations(b):
+      - main_op_name: "llm:evaluate_agent"
+        condition_op_name: "condition:true"
+        read_paths:
+          agent_response: "$.agent_response"
+          rollout_log: "$.rollout_log"
+          expected_fields: "$.expected_validation_fields"
+        write_path: "$.evaluation_result"
+    conditions(b):
+      true: "_end"
+
+properties:
+  - property_name: "city"
+    categories:
+      - category_name: "major_cities"
+        weight: 3.0
+        items:
+          - item_name: "New York"
+            weight: 5.0
+          - item_name: "London"
+            weight: 5.0
+          - item_name: "Tokyo"
+            weight: 4.0
+          - item_name: "Paris"
+            weight: 4.0
+          - item_name: "Berlin"
+            weight: 3.0
+          - item_name: "Sydney"
+            weight: 3.0
+          - item_name: "Singapore"
+            weight: 3.0
+      - category_name: "secondary_cities"
+        weight: 2.0
+        items:
+          - item_name: "Boston"
+            weight: 2.0
+          - item_name: "Manchester"
+            weight: 2.0
+          - item_name: "Osaka"
+            weight: 2.0
+          - item_name: "Lyon"
+            weight: 2.0
+          - item_name: "Munich"
+            weight: 2.0
+
+  - property_name: "train_station"
+    categories:
+      - category_name: "major_stations"
+        weight: 3.0
+        items:
+          - item_name: "Grand Central Terminal"
+            weight: 3.0
+          - item_name: "King's Cross Station"
+            weight: 3.0
+          - item_name: "Tokyo Station"
+            weight: 3.0
+          - item_name: "Gare du Nord"
+            weight: 3.0
+          - item_name: "Hauptbahnhof"
+            weight: 3.0
+      - category_name: "regional_stations"
+        weight: 2.0
+        items:
+          - item_name: "Penn Station"
+            weight: 2.0
+          - item_name: "Euston Station"
+            weight: 2.0
+          - item_name: "Shinjuku Station"
+            weight: 2.0
+
+  - property_name: "airport"
+    categories:
+      - category_name: "international_airports"
+        weight: 3.0
+        items:
+          - item_name: "JFK International Airport"
+            weight: 4.0
+          - item_name: "Heathrow Airport"
+            weight: 4.0
+          - item_name: "Haneda Airport"
+            weight: 3.0
+          - item_name: "Charles de Gaulle Airport"
+            weight: 3.0
+          - item_name: "Frankfurt Airport"
+            weight: 3.0
+      - category_name: "domestic_airports"
+        weight: 2.0
+        items:
+          - item_name: "LaGuardia Airport"
+            weight: 2.0
+          - item_name: "Gatwick Airport"
+            weight: 2.0
+          - item_name: "Narita Airport"
+            weight: 2.0
+
+  - property_name: "pref_for_train"
+    categories:
+      - category_name: "comfort"
+        weight: 2.0
+        items:
+          - item_name: "first-class cabin"
+            weight: 3.0
+          - item_name: "business class"
+            weight: 2.0
+          - item_name: "quiet car"
+            weight: 2.0
+      - category_name: "amenities"
+        weight: 2.0
+        items:
+          - item_name: "meal included"
+            weight: 3.0
+          - item_name: "WiFi connection"
+            weight: 3.0
+          - item_name: "power outlets"
+            weight: 2.0
+
+  - property_name: "pref_for_flight"
+    categories:
+      - category_name: "comfort"
+        weight: 2.0
+        items:
+          - item_name: "first-class cabin"
+            weight: 3.0
+          - item_name: "business class"
+            weight: 3.0
+          - item_name: "extra legroom"
+            weight: 2.0
+      - category_name: "amenities"
+        weight: 2.0
+        items:
+          - item_name: "meal included"
+            weight: 3.0
+          - item_name: "WiFi connection"
+            weight: 2.0
+          - item_name: "entertainment system"
+            weight: 2.0
+
+  - property_name: "relative_date"
+    categories:
+      - category_name: "tomorrow_variants"
+        weight: 2.0
+        items:
+          - item_name: "tomorrow"
+            weight: 3.0
+          - item_name: "next day"
+            weight: 2.0
+      - category_name: "today_variants"
+        weight: 3.0
+        items:
+          - item_name: "today"
+            weight: 4.0
+          - item_name: "same day"
+            weight: 2.0
+      - category_name: "week_variants"
+        weight: 2.0
+        items:
+          - item_name: "this weekend"
+            weight: 2.0
+          - item_name: "next week"
+            weight: 2.0
+
+start_node_placeholder: "_start"
+end_node_placeholder: "_end"
