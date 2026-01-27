@@ -291,7 +291,7 @@ properties:
 
 ### Key Concepts Demonstrated
 
-#### 1. Multiplexing Variants
+*1. Multiplexing Variants*
 
 The configuration defines two variants: `(a)` and `(b)`. Each variant has its own set of operations and conditions:
 
@@ -300,7 +300,7 @@ The configuration defines two variants: `(a)` and `(b)`. Each variant has its ow
 
 This demonstrates how a single configuration can produce multiple graph variants with different behaviors while sharing the same node structure.
 
-#### 2. Path Resolution Mechanisms
+*2. Path Resolution Mechanisms*
 
 The example uses different path resolution mechanisms:
 
@@ -313,7 +313,7 @@ The example uses different path resolution mechanisms:
   - `write_path: "$.target"` writes to the global state under the key `target`
   - `read_paths: {source: "$.source", target: "$.target"}` reads from the global state
 
-#### 3. Property Library with Weighted Sampling
+*3. Property Library with Weighted Sampling*
 
 The `properties` section defines a property library for date aliases with weighted categories and items:
 
@@ -322,7 +322,7 @@ The `properties` section defines a property library for date aliases with weight
 
 When sampling, categories and items are selected proportionally to their weights. For example, "-1D" is twice as likely to be selected as "+1D", and within "-1D", "yesterday" is twice as likely as "previous day".
 
-#### 4. Built-in Operations
+*4. Built-in Operations*
 
 The example uses several built-in operation modules:
 
@@ -331,7 +331,7 @@ The example uses several built-in operation modules:
 - **`judge:include`**: Checks if one value is included in another (useful for validation)
 - **`relative:date`**: Calculates dates relative to a reference date using natural language expressions
 
-#### 5. Execution Flow
+*5. Execution Flow*
 
 - **Variant (a) flow**: `node1` → `node2` → `node3`
   - Generates target range → Samples date category → Calculates relative date
