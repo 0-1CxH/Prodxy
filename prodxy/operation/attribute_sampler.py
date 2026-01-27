@@ -197,6 +197,22 @@ class PropertyIndicator:
     category_name: str = None
     item_name: str = None
 
+    def __dict__(self):
+        ret = {"property_name": self.property_name}
+        if self.category_name is not None:
+            ret.update({"category_name": self.category_name})
+        if self.item_name is not None:
+            ret.update({"item_name": self.item_name})
+        return ret
+    
+    def value(self):
+        ret = self.property_name
+        if self.category_name is not None:
+            ret = self.category_name
+        if self.item_name is not None:
+            ret = self.item_name
+        return ret
+
 @dataclass
 class ProdxyConstrain:
     constrain_subject: PropertyIndicator
@@ -374,5 +390,17 @@ class ProdxyPropertyLibrary:
             indicators.append(indicator)
 
         return indicators
+    
+    def sample(self, property_name, category_name=None, count=1, allow_repeat=False):
+        if category_name is None:
+            ret = self.sample_categories(property_name, count=count, allow_repeat=allow_repeat)
+        else:
+            ret = self.sample_items(property_name, category_name, count=count, allow_repeat=allow_repeat)
+        
+        ret = [_.value() for _ in ret]
+        if len(ret) == 1:
+            return ret[0]
+        else:
+            return ret
 
     

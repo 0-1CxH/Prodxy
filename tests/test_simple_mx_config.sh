@@ -1,7 +1,7 @@
 python -m prodxy.execution \
   --mx-config tests/simple_mx_config.yaml\
   --input 5\
-  --parallelism 2\
+  --parallelism 1\
   --variant a\
   --output tests/simple_a.jsonl
 

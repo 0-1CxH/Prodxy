@@ -98,7 +98,10 @@ class ProdxyNode:
         if operation_config.condition_op_name not in OperationMap:
             raise ValueError(f"operation {operation_config.condition_op_name} not registered")
 
-        operation_func = OperationMap[operation_config.main_op_name]
+        if operation_config.main_op_name == "property:sample":
+            operation_func = global_state.data['_prodxy_property_library'].sample
+        else:    
+            operation_func = OperationMap[operation_config.main_op_name]
         condition_func = OperationMap[operation_config.condition_op_name]
 
         # Prepare real arguments by resolving paths
@@ -107,7 +110,7 @@ class ProdxyNode:
 
         for argkey, argpath in operation_config.read_paths.items():
             if argpath.startswith('@'): # literal string
-                argliteral =  argpath.split('@')[1]
+                argliteral =  argpath[1:]
                 try:
                     arg_values[argkey] = eval(argliteral)
                 except:

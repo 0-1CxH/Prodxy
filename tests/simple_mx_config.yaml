@@ -8,6 +8,9 @@ mx_node_configs:
           is_integer: "@True"
           count: "@5"
         write_path: "$.target"
+    conditions(a):
+      true: "node2"
+      false: "node2"
     operations(b):
       - main_op_name: "valgen:range"
         condition_op_name: "condition:exist"
@@ -20,6 +23,12 @@ mx_node_configs:
       true: "node2"
       false: "node2"
   - name: "node2"
+    operations(a):
+      - main_op_name: "property:sample"
+        condition_op_name: "condition:identity"
+        read_paths:
+          property_name: "@date_alias"
+        write_path: "$.category"
     operations(b):
       - main_op_name: "judge:include"
         condition_op_name: "condition:identity"
@@ -27,3 +36,20 @@ mx_node_configs:
           source: "$.source"
           target: "$.target"
         write_path: "$.result"
+properties:
+  - property_name: date_alias
+    categories:
+      - category_name: "+1D"
+        weight: 1.0
+        items:
+          - item_name: "tomorrow"
+            weight: 1.0
+          - item_name: "next day"
+            weight: 2.0
+      - category_name: "-1D"
+        weight: 2.0
+        items:
+          - item_name: "yesterday"
+            weight: 2.0
+          - item_name: "previous day"
+            weight: 1.0
