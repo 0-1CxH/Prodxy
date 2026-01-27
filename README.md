@@ -4,11 +4,18 @@ Prodxy (Product Proxy) is a low-code framework that ensures close alignment betw
 
 # Quick Start
 
-## Environment 
+## Clone
+
+```
+git clone https://github.com/0-1CxH/Prodxy.git
+```
+
+
+## Preapre Environment 
 
 ```python>=3.10``` is required.
 
-There are some packages required:
+These packages are required:
 
 ```
 langgraph
@@ -28,14 +35,154 @@ If everything is right, you can pass the regression tests:
 python -m unittest discover tests
 ```
 
+## Write `MX Config`
 
-## UI
+MX (Multiplex) Config is the core configuration format in Prodxy that allows you to define multiple variants of the same graph using a single configuration file. This enables you to share the same graph structure while having different operations for different purposes (e.g., variant A vs variant B).
+
+### Basic Structure
+
+An MX config file contains the following top-level sections:
+
+- **`mx_node_configs`**: Array of node configurations with multiplexed operations and conditions
+- **`properties`** (optional): Property library definitions for sampling operations
+- **`constrains`** (optional): Constraints between properties
+- **`start_node_placeholder`** (optional): Custom start node placeholder (default: `_start`)
+- **`end_node_placeholder`** (optional): Custom end node placeholder (default: `_end`)
+
+### Node Configuration
+
+Each node in `mx_node_configs` must have a `name` field and can contain:
+
+- **Base operations/conditions**: `operations` and `conditions` (used as `_default` variant)
+- **Variant-specific operations/conditions**: Use suffix notation like `operations(variant_a)`, `conditions(variant_b)`, etc.
+
+#### Example Node Structure:
+```yaml
+- name: "node_name"
+  # Base operations (becomes _default variant)
+  operations:
+    - main_op_name: "operation_name"
+      condition_op_name: "condition_name"
+      read_paths:
+        param1: "$.json_path"
+        param2: "@literal_value"
+      write_path: "$.output_path"
+  conditions:
+    condition_value: "next_node_name"
+
+  # Variant-specific operations
+  operations(variant_a):
+    - main_op_name: "variant_a_operation"
+      # ... other fields
+  conditions(variant_a):
+    true: "next_variant_a_node"
+
+  operations(variant_b):
+    - main_op_name: "variant_b_operation"
+      # ... other fields
+  conditions(variant_b):
+    true: "next_variant_b_node"
+```
+
+### Multiplexing Variants
+
+When you define operations with suffixes like `(variant_a)`, `(variant_b)`, etc., Prodxy automatically creates separate graph variants:
+
+- Each unique suffix becomes a variant name (e.g., `variant_a`, `variant_b`)
+- If base `operations`/`conditions` exist without suffixes, they form the `_default` variant
+- Each variant contains only the nodes that have content for that specific suffix
+
+### Path Resolution in Operations
+
+The `read_paths` field supports three types of path resolution:
+
+1. **JSON Path (`$` prefix)**: Resolves against the global state
+   ```yaml
+   read_paths:
+     data: "$.user_input"
+   ```
+
+2. **Evaluable Values (`@` prefix)**: First attempts to evaluate as a Python expression, falls back to literal string if evaluation fails
+   ```yaml
+   read_paths:
+     number: "@42"           # evaluates to integer 42
+     tuple: "@(1, 2, 3)"     # evaluates to tuple (1, 2, 3)
+     string: "@hello world"  # remains as string "hello world" (eval fails)
+   ```
+
+3. **Plain Literals**: Used as-is without any processing (no special prefix)
+   ```yaml
+   read_paths:
+     constant: "fixed_value"
+   ```
+## Execute
+
+Prodxy provides a command-line interface for batch execution of MX graphs with flexible input/output options and parallel processing capabilities.
+
+### Basic Usage
+
+```bash
+python -m prodxy.execution \
+  --mx-config <path_to_mx_yaml> \
+  --variant <variant_name> \
+  --input <input_spec> \
+  [--output <output_spec>] \
+  [--parallelism <num_processes>] \
+  [--dump-trace]
+```
+
+### Input Modes
+
+The `--input` parameter supports three different modes:
+
+1. **Null Mode**: Specify an integer to execute the graph N times without input data
+   ```bash
+   --input 100  # Execute 100 times with empty input {}
+   ```
+
+2. **File Mode**: Provide a directory path containing JSON files
+   ```bash
+   --input ./input_data/  # Process all .json files in the directory
+   ```
+   Each JSON file will be loaded as input data, and the filename (without .json extension) will be used as the identifier.
+
+3. **Line Mode**: Provide a path to a JSONL file (one JSON object per line)
+   ```bash
+   --input ./input_data.jsonl  # Process each line as separate input
+   ```
+   Each line number will be used as the identifier for the corresponding input.
+
+### Output Modes
+
+The `--output` parameter determines how results are saved:
+
+1. **Null Mode**: No output (omit the `--output` parameter)
+   ```bash
+   # Results are processed but not saved
+   ```
+
+2. **Line Mode**: Output to a JSONL file (appends results as JSON lines)
+   ```bash
+   --output ./results.jsonl  # Append results as JSON lines
+   ```
+
+3. **File Mode**: Output to a directory (creates individual JSON files)
+   ```bash
+   --output ./results/  # Creates files like ./results/{identifier}.json
+   ```
+
+### Additional Options
+
+- **`--parallelism` (`-p`)**: Control maximum concurrent executions
+  - Default: CPU core count
+  - Set to 1 for sequential execution
+  - Example: `--parallelism 8`
+
+- **`--dump-trace` (`-d`)**: Include execution trace information in output
+  - When enabled, output includes both `global_state` and `trace` fields
+  - Useful for debugging and analysis
 
 
-## The `MX Config`
-
-
-## Batch Mode
 
 
 # Core Concepts
@@ -65,22 +212,153 @@ The `ProdxyPropertyLibrary` provides a structured way to define and sample from 
 
 
 
-# Example
+# Examples
 
-## `examples/search_flights_and_trains.yaml`
 
-The example demostrates an LLM agent product's business scenario 'search flights and trains', which is described as follows: 
+## Toy Example for Understanding Concepts
+
+Let's examine a simple but comprehensive example that demonstrates the core concepts of Prodxy using the `example/mx_config_toy.yaml` configuration file.
+
+### Configuration Overview
+
+This example defines a graph with three nodes (`node1`, `node2`, `node3`) and two variants (`a` and `b`). It showcases multiplexing, property libraries, and various built-in operations working together.
+
+```yaml
+mx_node_configs:
+  - name: "node1"
+    operations(a):
+      - main_op_name: "valgen:range"
+        condition_op_name: "condition:true"
+        read_paths:
+          boundary: "@(1,10)"
+          is_integer: "@True"
+          count: "@5"
+        write_path: "$.target"
+    conditions(a):
+      true: "node2"
+    operations(b):
+      - main_op_name: "valgen:range"
+        condition_op_name: "condition:true"
+        read_paths:
+          boundary: "@(3,6)"
+          is_integer: "@True"
+          count: "@1"
+        write_path: "$.source"
+    conditions(b):
+      true: "node2"
+  - name: "node2"
+    operations(a):
+      - main_op_name: "property:sample"
+        condition_op_name: "condition:true"
+        read_paths:
+          property_name: "date_alias"
+        write_path: "$.category"
+    conditions(a):
+      true: "node3"
+    operations(b):
+      - main_op_name: "judge:include"
+        condition_op_name: "condition:identity"
+        read_paths:
+          source: "$.source"
+          target: "$.target"
+        write_path: "$.comparison"
+  - name: "node3"
+    operations(a):
+      - main_op_name: "relative:date"
+        condition_op_name: "condition:true"
+        read_paths:
+          reference_date: "2026-01-01"
+          shift: "$.category"
+        write_path: "$.result"
+properties:
+  - property_name: date_alias
+    categories:
+      - category_name: "+1D"
+        weight: 1.0
+        items:
+          - item_name: "tomorrow"
+            weight: 1.0
+          - item_name: "next day"
+            weight: 2.0
+      - category_name: "-1D"
+        weight: 2.0
+        items:
+          - item_name: "yesterday"
+            weight: 2.0
+          - item_name: "previous day"
+            weight: 1.0
+```
+
+### Key Concepts Demonstrated
+
+#### 1. Multiplexing Variants
+
+The configuration defines two variants: `(a)` and `(b)`. Each variant has its own set of operations and conditions:
+
+- **Variant (a)**: Generates a range of 5 random integers between 1-10 (`$.target`), samples a date alias from the property library (`$.category`), then calculates a relative date based on the sampled alias (`$.result`).
+- **Variant (b)**: Generates a single random integer between 3-6 (`$.source`), then checks if this value is included in the target range from variant (a) (`$.comparison`).
+
+This demonstrates how a single configuration can produce multiple graph variants with different behaviors while sharing the same node structure.
+
+#### 2. Path Resolution Mechanisms
+
+The example uses different path resolution mechanisms:
+
+- **Evaluable Values (`@` prefix)**:
+  - `boundary: "@(1,10)"` evaluates to a Python tuple `(1, 10)`
+  - `is_integer: "@True"` evaluates to the boolean `True`
+  - `count: "@5"` evaluates to the integer `5`
+
+- **JSON Path (`$` prefix)**:
+  - `write_path: "$.target"` writes to the global state under the key `target`
+  - `read_paths: {source: "$.source", target: "$.target"}` reads from the global state
+
+#### 3. Property Library with Weighted Sampling
+
+The `properties` section defines a property library for date aliases with weighted categories and items:
+
+- The `"+1D"` category has weight 1.0 and contains "tomorrow" (weight 1.0) and "next day" (weight 2.0)
+- The `"-1D"` category has weight 2.0 and contains "yesterday" (weight 2.0) and "previous day" (weight 1.0)
+
+When sampling, categories and items are selected proportionally to their weights. For example, "-1D" is twice as likely to be selected as "+1D", and within "-1D", "yesterday" is twice as likely as "previous day".
+
+#### 4. Built-in Operations
+
+The example uses several built-in operation modules:
+
+- **`valgen:range`**: Generates random values within specified boundaries
+- **`property:sample`**: Samples from the property library based on weights
+- **`judge:include`**: Checks if one value is included in another (useful for validation)
+- **`relative:date`**: Calculates dates relative to a reference date using natural language expressions
+
+#### 5. Execution Flow
+
+- **Variant (a) flow**: `node1` → `node2` → `node3`
+  - Generates target range → Samples date category → Calculates relative date
+
+- **Variant (b) flow**: `node1` → `node2`
+  - Generates source value → Checks inclusion in target range
+
+This toy example demonstrates how Prodxy's core concepts work together to create flexible, reusable graph configurations that can serve multiple purposes (e.g., data generation vs. validation) through multiplexing.
+
+
+
+## Real-World Product Scenario
+
+This example `examples/search_flights_and_trains.yaml` demonstrates a practical LLM agent implementation for the "search flights and trains" business scenario. The requirements are as follows: 
 
 ```text
-- User must give a specific destination city in text query, but giving a source city in text query is optional, location context is used if not.
-- User can choose to point out the departure date, relative date or date range in text query, if not, use today.
-- User might or might not specify the method (flight or train) by directly clarification or by specify the airport name, train station name of source / destination city in text query, if is the latter case, the city is implied.
-- User can have extra demands, such as first-class cabin, meal included, or WiFi connection for the flight or train trip.
-- The agent needs to call correct tool with correct arguments that meets all requirements of user.
-- The agent's response given to user should not contain halllucination or harmful information.
+- Users must specify a destination city in their query; the source city is optional (location context is used if omitted)
+- Users can specify departure dates as absolute dates, relative expressions (e.g., "tomorrow"), or date ranges; if unspecified, today's date is used
+- Transportation method (flight or train) can be specified either explicitly or implicitly through airport/train station names in the query
+- Users may include additional preferences such as first-class seating, meal service, or WiFi availability
+- The agent must invoke the appropriate tools with correct parameters that satisfy all user requirements
+- Agent responses must be factually accurate and free from hallucinations or harmful content
 ```
 
-The Prodxy graph is designed as:
+### Deisgn of Prodxy Graph Architecture
+
+The Prodxy graph architecture is designed as follows:
 
 ```mermaid
 stateDiagram-v2
@@ -114,25 +392,26 @@ stateDiagram-v2
     finalization --> [*]
 ```
 
+### Building the Query Synthesis Pipeline
 
-Then, building the query synthesis pipeline is easy as filling the Prodxy graph with operations:
+Building the query synthesis pipeline involves populating the Prodxy graph with appropriate operations:
 
 ```mermaid
 stateDiagram-v2
-    state "general_destination_city: sample a city name from property 'city', or nothing" as general_destination_city
-    state "general_source_city: sample a city name from property 'cities' that is different from destination, or nothing" as general_source_city
-    state "departure_date_format: random set flag of date format (relative, absolute, range)" as departure_date_format
-    state "relative_departure_date: generate a relative departure date" as relative_departure_date
-    state "absolute_departure_date: generate an absolute departure date" as absolute_departure_date
-    state "departure_date_range: generate two dates and form a range" as departure_date_range
-    state "specific_method: set flag of method description (implicit, explicit)" as specific_method
-    state "explicit_method: set flag of explicit method name (train, flight)" as explicit_method
-    state "implicit_method: set flag of implicit method name (train, flight)" as implicit_method
-    state "specific_train_stations: sample one or two train station from property 'station' with the given destination (or plus source) city name" as specific_train_stations
-    state "specific_airports: sample an airport from property 'airport' with the given destination (or plus source) city name" as specific_airports
-    state "train_personal_demands: sample zero to many personal demand(s) from property 'pref_for_train'" as train_personal_demands
-    state "flight_personal_demands: sample zero to many personal demand(s) from property 'pref_for_flight'" as flight_personal_demands
-    state "finalization: call LLM to get final synthetic query(s) based on the given flags and properties, then save everything" as finalization
+    state "general_destination_city: Sample a city name from the 'city' property, or nothing" as general_destination_city
+    state "general_source_city: Sample a city name from the 'cities' property that differs from the destination, or nothing" as general_source_city
+    state "departure_date_format: Randomly set date format flag (relative, absolute, range)" as departure_date_format
+    state "relative_departure_date: Generate a relative departure date" as relative_departure_date
+    state "absolute_departure_date: Generate an absolute departure date" as absolute_departure_date
+    state "departure_date_range: Generate two dates and form a range" as departure_date_range
+    state "specific_method: Set method description flag (implicit, explicit)" as specific_method
+    state "explicit_method: Set explicit method name flag (train, flight)" as explicit_method
+    state "implicit_method: Set implicit method name flag (train, flight)" as implicit_method
+    state "specific_train_stations: Sample one or two train stations from the 'station' property based on destination (and source) city" as specific_train_stations
+    state "specific_airports: Sample an airport from the 'airport' property based on destination (and source) city" as specific_airports
+    state "train_personal_demands: Sample zero or more personal preferences from the 'pref_for_train' property" as train_personal_demands
+    state "flight_personal_demands: Sample zero or more personal preferences from the 'pref_for_flight' property" as flight_personal_demands
+    state "finalization: Invoke LLM to generate final synthetic queries based on all collected parameters, then save results" as finalization
 
     [*] --> general_destination_city
     general_destination_city --> finalization : not given
@@ -163,24 +442,26 @@ stateDiagram-v2
     finalization --> [*]
 ```
 
-And, the agent evaluation pipeline will still use the Prodxy graph, but filling with another set of operations:
+### Building the Capability Evaluation Pipeline
+
+Similarly, the capability evaluation pipeline uses the same Prodxy graph structure but with a different set of validation operations:
 
 ```mermaid
 stateDiagram-v2
-    state "general_destination_city: validate destination city argument of tool call, or no city label" as general_destination_city
-    state "general_source_city: validate source city argument of tool call, or no city label" as general_source_city
-    state "departure_date_format: go to next node by flag of date format (relative, absolute, range)" as departure_date_format
-    state "relative_departure_date: validate the relative departure date field of tool call" as relative_departure_date
-    state "absolute_departure_date: validate the absolute departure date field of tool call" as absolute_departure_date
-    state "departure_date_range: validate the two-date range field of tool call" as departure_date_range
-    state "specific_method: go to next node by flag of method description (implicit, explicit)" as specific_method
-    state "explicit_method: go to next node by flag of explicit method name (train, flight)" as explicit_method
-    state "implicit_method: go to next node by flag of implicit method name (train, flight)" as implicit_method
-    state "specific_train_stations: validate the destination and/or source train station" as specific_train_stations
-    state "specific_airports: validate the destination and/or source airport" as specific_airports
-    state "train_personal_demands: validate the train method by tool name, and validate the personal demand field of tool call" as train_personal_demands
-    state "flight_personal_demands: validate the flight method by tool name, and validate the personal demand field of tool call" as flight_personal_demands
-    state "finalization: call LLM to get ORM result, hallucination check result of the rollout log, then save everything" as finalization
+    state "general_destination_city: Validate destination city argument of tool call, or no city label" as general_destination_city
+    state "general_source_city: Validate source city argument of tool call, or no city label" as general_source_city
+    state "departure_date_format: Route to next node based on date format flag (relative, absolute, range)" as departure_date_format
+    state "relative_departure_date: Validate the relative departure date field of tool call" as relative_departure_date
+    state "absolute_departure_date: Validate the absolute departure date field of tool call" as absolute_departure_date
+    state "departure_date_range: Validate the two-date range field of tool call" as departure_date_range
+    state "specific_method: Route to next node based on method description flag (implicit, explicit)" as specific_method
+    state "explicit_method: Route to next node based on explicit method name flag (train, flight)" as explicit_method
+    state "implicit_method: Route to next node based on implicit method name flag (train, flight)" as implicit_method
+    state "specific_train_stations: Validate destination and/or source train station" as specific_train_stations
+    state "specific_airports: Validate destination and/or source airport" as specific_airports
+    state "train_personal_demands: Validate train method by tool name and personal demand field of tool call" as train_personal_demands
+    state "flight_personal_demands: Validate flight method by tool name and personal demand field of tool call" as flight_personal_demands
+    state "finalization: Call LLM to obtain ORM result and hallucination check result from rollout log, then save all results" as finalization
 
     [*] --> general_destination_city
     general_destination_city --> finalization : not given

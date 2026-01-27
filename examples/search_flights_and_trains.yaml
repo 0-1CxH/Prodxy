@@ -1,27 +1,27 @@
 mx_node_configs:
   - name: "general_destination_city"
-    operations(a):
+    operations(synthesis):
       - main_op_name: "property:sample_or_none"
         condition_op_name: "condition:has_value"
         read_paths:
           property_name: "city"
           none_probability: 0.1
         write_path: "$.destination_city"
-    conditions(a):
+    conditions(synthesis):
       false: "finalization"
       true: "general_source_city"
-    operations(b):
+    operations(evaluation):
       - main_op_name: "field:extract_destination"
         condition_op_name: "condition:has_value"
         read_paths:
           tool_call: "$.agent_tool_call"
         write_path: "$.destination_city"
-    conditions(b):
+    conditions(evaluation):
       false: "finalization"
       true: "general_source_city"
 
   - name: "general_source_city"
-    operations(a):
+    operations(synthesis):
       - main_op_name: "property:sample_different_or_none"
         condition_op_name: "condition:true"
         read_paths:
@@ -29,163 +29,163 @@ mx_node_configs:
           exclude_value: "$.destination_city"
           none_probability: 0.3
         write_path: "$.source_city"
-    conditions(a):
+    conditions(synthesis):
       true: "departure_date_format"
-    operations(b):
+    operations(evaluation):
       - main_op_name: "field:extract_source"
         condition_op_name: "condition:true"
         read_paths:
           tool_call: "$.agent_tool_call"
         write_path: "$.source_city"
-    conditions(b):
+    conditions(evaluation):
       true: "departure_date_format"
 
   - name: "departure_date_format"
-    operations(a):
+    operations(synthesis):
       - main_op_name: "valgen:enum"
         condition_op_name: "condition:set_flag"
         read_paths:
           choices: ["relative", "absolute", "range"]
           weights: [0.4, 0.4, 0.2]
         write_path: "$.date_format"
-    conditions(a):
+    conditions(synthesis):
       relative: "relative_departure_date"
       absolute: "absolute_departure_date"
       range: "departure_date_range"
-    operations(b):
+    operations(evaluation):
       - main_op_name: "field:determine_date_format"
         condition_op_name: "condition:set_flag"
         read_paths:
           tool_call: "$.agent_tool_call"
         write_path: "$.date_format"
-    conditions(b):
+    conditions(evaluation):
       relative: "relative_departure_date"
       absolute: "absolute_departure_date"
       range: "departure_date_range"
 
   - name: "relative_departure_date"
-    operations(a):
+    operations(synthesis):
       - main_op_name: "property:sample"
         condition_op_name: "condition:true"
         read_paths:
           property_name: "relative_date"
         write_path: "$.departure_date"
-    conditions(a):
+    conditions(synthesis):
       true: "specific_method"
-    operations(b):
+    operations(evaluation):
       - main_op_name: "field:validate_relative_date"
         condition_op_name: "condition:true"
         read_paths:
           tool_call: "$.agent_tool_call"
           expected_format: "$.date_format"
         write_path: "$.validation_result"
-    conditions(b):
+    conditions(evaluation):
       true: "specific_method"
 
   - name: "absolute_departure_date"
-    operations(a):
+    operations(synthesis):
       - main_op_name: "valgen:date"
         condition_op_name: "condition:true"
         read_paths:
           boundary: "@(2026-01-01,2027-12-31)"
         write_path: "$.departure_date"
-    conditions(a):
+    conditions(synthesis):
       true: "specific_method"
-    operations(b):
+    operations(evaluation):
       - main_op_name: "field:validate_absolute_date"
         condition_op_name: "condition:true"
         read_paths:
           tool_call: "$.agent_tool_call"
           expected_format: "$.date_format"
         write_path: "$.validation_result"
-    conditions(b):
+    conditions(evaluation):
       true: "specific_method"
 
   - name: "departure_date_range"
-    operations(a):
+    operations(synthesis):
       - main_op_name: "valgen:date_range"
         condition_op_name: "condition:true"
         read_paths:
           boundary: "@(2026-01-01,2027-12-31)"
           range_days: "@(1,30)"
         write_path: "$.departure_date"
-    conditions(a):
+    conditions(synthesis):
       true: "specific_method"
-    operations(b):
+    operations(evaluation):
       - main_op_name: "field:validate_date_range"
         condition_op_name: "condition:true"
         read_paths:
           tool_call: "$.agent_tool_call"
           expected_format: "$.date_format"
         write_path: "$.validation_result"
-    conditions(b):
+    conditions(evaluation):
       true: "specific_method"
 
   - name: "specific_method"
-    operations(a):
+    operations(synthesis):
       - main_op_name: "valgen:enum"
         condition_op_name: "condition:set_flag"
         read_paths:
           choices: ["implicit", "explicit"]
           weights: [0.3, 0.7]
         write_path: "$.method_description"
-    conditions(a):
+    conditions(synthesis):
       implicit: "implicit_method"
       explicit: "explicit_method"
-    operations(b):
+    operations(evaluation):
       - main_op_name: "field:determine_method_type"
         condition_op_name: "condition:set_flag"
         read_paths:
           tool_call: "$.agent_tool_call"
         write_path: "$.method_description"
-    conditions(b):
+    conditions(evaluation):
       implicit: "implicit_method"
       explicit: "explicit_method"
 
   - name: "explicit_method"
-    operations(a):
+    operations(synthesis):
       - main_op_name: "valgen:enum"
         condition_op_name: "condition:set_flag"
         read_paths:
           choices: ["train", "flight"]
           weights: [0.5, 0.5]
         write_path: "$.method_name"
-    conditions(a):
+    conditions(synthesis):
       train: "train_personal_demands"
       flight: "flight_personal_demands"
-    operations(b):
+    operations(evaluation):
       - main_op_name: "field:extract_explicit_method"
         condition_op_name: "condition:set_flag"
         read_paths:
           tool_call: "$.agent_tool_call"
         write_path: "$.method_name"
-    conditions(b):
+    conditions(evaluation):
       train: "train_personal_demands"
       flight: "flight_personal_demands"
 
   - name: "implicit_method"
-    operations(a):
+    operations(synthesis):
       - main_op_name: "valgen:enum"
         condition_op_name: "condition:set_flag"
         read_paths:
           choices: ["train", "flight"]
           weights: [0.5, 0.5]
         write_path: "$.method_name"
-    conditions(a):
+    conditions(synthesis):
       train: "specific_train_stations"
       flight: "specific_airports"
-    operations(b):
+    operations(evaluation):
       - main_op_name: "field:determine_implicit_method"
         condition_op_name: "condition:set_flag"
         read_paths:
           tool_call: "$.agent_tool_call"
         write_path: "$.method_name"
-    conditions(b):
+    conditions(evaluation):
       train: "specific_train_stations"
       flight: "specific_airports"
 
   - name: "specific_train_stations"
-    operations(a):
+    operations(synthesis):
       - main_op_name: "property:sample_stations"
         condition_op_name: "condition:true"
         read_paths:
@@ -193,20 +193,20 @@ mx_node_configs:
           destination_city: "$.destination_city"
           source_city: "$.source_city"
         write_path: "$.stations"
-    conditions(a):
+    conditions(synthesis):
       true: "train_personal_demands"
-    operations(b):
+    operations(evaluation):
       - main_op_name: "field:validate_train_stations"
         condition_op_name: "condition:true"
         read_paths:
           tool_call: "$.agent_tool_call"
           expected_cities: {"destination": "$.destination_city", "source": "$.source_city"}
         write_path: "$.validation_result"
-    conditions(b):
+    conditions(evaluation):
       true: "train_personal_demands"
 
   - name: "specific_airports"
-    operations(a):
+    operations(synthesis):
       - main_op_name: "property:sample_airports"
         condition_op_name: "condition:true"
         read_paths:
@@ -214,60 +214,60 @@ mx_node_configs:
           destination_city: "$.destination_city"
           source_city: "$.source_city"
         write_path: "$.airports"
-    conditions(a):
+    conditions(synthesis):
       true: "flight_personal_demands"
-    operations(b):
+    operations(evaluation):
       - main_op_name: "field:validate_airports"
         condition_op_name: "condition:true"
         read_paths:
           tool_call: "$.agent_tool_call"
           expected_cities: {"destination": "$.destination_city", "source": "$.source_city"}
         write_path: "$.validation_result"
-    conditions(b):
+    conditions(evaluation):
       true: "flight_personal_demands"
 
   - name: "train_personal_demands"
-    operations(a):
+    operations(synthesis):
       - main_op_name: "property:sample_multiple_or_none"
         condition_op_name: "condition:true"
         read_paths:
           property_name: "pref_for_train"
           max_count: 3
         write_path: "$.personal_demands"
-    conditions(a):
+    conditions(synthesis):
       true: "finalization"
-    operations(b):
+    operations(evaluation):
       - main_op_name: "field:validate_train_demands"
         condition_op_name: "condition:true"
         read_paths:
           tool_call: "$.agent_tool_call"
           expected_tool: "train_search"
         write_path: "$.validation_result"
-    conditions(b):
+    conditions(evaluation):
       true: "finalization"
 
   - name: "flight_personal_demands"
-    operations(a):
+    operations(synthesis):
       - main_op_name: "property:sample_multiple_or_none"
         condition_op_name: "condition:true"
         read_paths:
           property_name: "pref_for_flight"
           max_count: 3
         write_path: "$.personal_demands"
-    conditions(a):
+    conditions(synthesis):
       true: "finalization"
-    operations(b):
+    operations(evaluation):
       - main_op_name: "field:validate_flight_demands"
         condition_op_name: "condition:true"
         read_paths:
           tool_call: "$.agent_tool_call"
           expected_tool: "flight_search"
         write_path: "$.validation_result"
-    conditions(b):
+    conditions(evaluation):
       true: "finalization"
 
   - name: "finalization"
-    operations(a):
+    operations(synthesis):
       - main_op_name: "llm:synthesize_query"
         condition_op_name: "condition:true"
         read_paths:
@@ -279,9 +279,9 @@ mx_node_configs:
           airports: "$.airports"
           personal_demands: "$.personal_demands"
         write_path: "$.synthetic_query"
-    conditions(a):
+    conditions(synthesis):
       true: "_end"
-    operations(b):
+    operations(evaluation):
       - main_op_name: "llm:evaluate_agent"
         condition_op_name: "condition:true"
         read_paths:
@@ -289,7 +289,7 @@ mx_node_configs:
           rollout_log: "$.rollout_log"
           expected_fields: "$.expected_validation_fields"
         write_path: "$.evaluation_result"
-    conditions(b):
+    conditions(evaluation):
       true: "_end"
 
 properties:

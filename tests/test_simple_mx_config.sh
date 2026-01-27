@@ -1,12 +1,12 @@
 python -m prodxy.execution \
-  --mx-config tests/simple_mx_config.yaml\
+  --mx-config tests/mx_config_toy.yaml\
   --input 5\
   --parallelism 1\
   --variant a\
   --output tests/simple_a.jsonl
 
 python -m prodxy.execution \
-  --mx-config tests/simple_mx_config.yaml\
+  --mx-config tests/mx_config_toy.yaml\
   --input tests/simple_a.jsonl\
   --parallelism 4\
   --variant b\
@@ -20,14 +20,14 @@ rm -f tests/simple_a.jsonl
 rm -f tests/simple_b.jsonl
 
 python -m prodxy.execution \
-  --mx-config tests/simple_mx_config.yaml\
+  --mx-config tests/mx_config_toy.yaml\
   --input 5\
   --parallelism 2\
   --variant a\
   --output tests/simple_a
 
 python -m prodxy.execution \
-  --mx-config tests/simple_mx_config.yaml\
+  --mx-config tests/mx_config_toy.yaml\
   --input tests/simple_a\
   --parallelism 4\
   --variant b\
