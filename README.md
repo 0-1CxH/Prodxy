@@ -1,6 +1,6 @@
 
 # Introduction
-Prodxy (Product Proxy) is a low-code framework that ensures close alignment between product requirements and engineering implementation by converting business scenarios into executable pipelines for LLM-agent-related data synthesis and capability evaluation. 
+Prodxy (Product Proxy) is a low-code framework that ensures close alignment between product requirements and engineering implementation by converting business scenarios into executable pipelines for LLM-agent-related query synthesis, data labeling and capability evaluation, sharing the same underlying graph structure. 
 
 # Quick Start
 
@@ -69,7 +69,7 @@ The `ProdxyPropertyLibrary` provides a structured way to define and sample from 
 
 ## `examples/search_flights_and_trains.yaml`
 
-The example demostrates an LLM agent product's business scene 'search flights and trains', which is described as follows: 
+The example demostrates an LLM agent product's business scenario 'search flights and trains', which is described as follows: 
 
 ```text
 - User must give a specific destination city in text query, but giving a source city in text query is optional, location context is used if not.
