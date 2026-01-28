@@ -1,0 +1,46 @@
+properties:
+  - property_name: color
+    categories:
+      - category_name: primary
+        weight: 2.0
+        items:
+          - item_name: red
+            weight: 3.0
+          - item_name: blue
+            weight: 2.0
+          - item_name: yellow
+            weight: 1.0
+      - category_name: secondary
+        weight: 1.0
+        items:
+          - item_name: green
+            weight: 2.0
+          - item_name: orange
+            weight: 1.5
+          - item_name: purple
+            weight: 1.0
+  - property_name: size
+    categories:
+      - category_name: small
+        weight: 1.0
+        items:
+          - item_name: tiny
+            weight: 1.0
+          - item_name: small
+            weight: 2.0
+      - category_name: large
+        weight: 2.0
+        items:
+          - item_name: big
+            weight: 2.0
+          - item_name: huge
+            weight: 1.0
+constrains:
+  - constrain_subject:
+      property_name: color
+      category_name: primary
+      item_name: red
+    constrain_object:
+      - property_name: size
+        category_name: large
+        item_name: huge

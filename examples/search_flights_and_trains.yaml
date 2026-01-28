@@ -1,0 +1,477 @@
+mx_node_configs:
+  - name: "general_destination_city"
+    operations(synthesis):
+      - main_op_name: "property:sample"
+        condition_op_name: "condition:exist"
+        read_paths:
+          property_name: "city"
+          category_name: "destination_cities"
+          none_prob: 0.1
+        write_path: "$.destination_city"
+    conditions(synthesis):
+      false: "finalization"
+      true: "general_source_city"
+    operations(evaluation):
+      - main_op_name: "field:extract_destination"
+        condition_op_name: "condition:has_value"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+        write_path: "$.destination_city"
+    conditions(evaluation):
+      false: "finalization"
+      true: "general_source_city"
+
+  - name: "general_source_city"
+    operations(synthesis):
+      - main_op_name: "property:sample"
+        condition_op_name: "condition:true"
+        read_paths:
+          property_name: "city"
+          category_name: "source_cities"
+          none_prob: 0.3
+        write_path: "$.source_city"
+    conditions(synthesis):
+      true: "departure_date_format"
+    operations(evaluation):
+      - main_op_name: "field:extract_source"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+        write_path: "$.source_city"
+    conditions(evaluation):
+      true: "departure_date_format"
+
+  - name: "departure_date_format"
+    operations(synthesis):
+      - main_op_name: "valgen:enum"
+        condition_op_name: "condition:identity"
+        read_paths:
+          classifications: {"relative": 0.4, "absolute": 0.4, "range": 0.2}
+        write_path: "$.date_format"
+    conditions(synthesis):
+      relative: "relative_departure_date"
+      absolute: "absolute_departure_date"
+      range: "departure_date_range"
+    operations(evaluation):
+      - main_op_name: "field:determine_date_format"
+        condition_op_name: "condition:set_flag"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+        write_path: "$.date_format"
+    conditions(evaluation):
+      relative: "relative_departure_date"
+      absolute: "absolute_departure_date"
+      range: "departure_date_range"
+
+  - name: "relative_departure_date"
+    operations(synthesis):
+      - main_op_name: "property:sample"
+        condition_op_name: "condition:true"
+        read_paths:
+          property_name: "relative_date"
+          random_category: "@True"
+        write_path: "$.departure_date"
+    conditions(synthesis):
+      true: "specific_method"
+    operations(evaluation):
+      - main_op_name: "field:validate_relative_date"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+          expected_format: "$.date_format"
+        write_path: "$.validation_result"
+    conditions(evaluation):
+      true: "specific_method"
+
+  - name: "absolute_departure_date"
+    operations(synthesis):
+      - main_op_name: "valgen:date"
+        condition_op_name: "condition:true"
+        read_paths:
+          boundary: "@5"
+        write_path: "$.departure_date"
+    conditions(synthesis):
+      true: "specific_method"
+    operations(evaluation):
+      - main_op_name: "field:validate_absolute_date"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+          expected_format: "$.date_format"
+        write_path: "$.validation_result"
+    conditions(evaluation):
+      true: "specific_method"
+
+  - name: "departure_date_range"
+    operations(synthesis):
+      - main_op_name: "valgen:date"
+        condition_op_name: "condition:true"
+        read_paths:
+          boundary: "@('2026-01-01','2026-01-10')"
+          count: "@2"
+        write_path: "$.departure_date"
+    conditions(synthesis):
+      true: "specific_method"
+    operations(evaluation):
+      - main_op_name: "field:validate_date_range"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+          expected_format: "$.date_format"
+        write_path: "$.validation_result"
+    conditions(evaluation):
+      true: "specific_method"
+
+  - name: "specific_method"
+    operations(synthesis):
+      - main_op_name: "valgen:enum"
+        condition_op_name: "condition:identity"
+        read_paths:
+          classifications: {"implicit": 0.3, "explicit": 0.7}
+        write_path: "$.method_description"
+    conditions(synthesis):
+      implicit: "implicit_method"
+      explicit: "explicit_method"
+    operations(evaluation):
+      - main_op_name: "field:determine_method_type"
+        condition_op_name: "condition:identity"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+        write_path: "$.method_description"
+    conditions(evaluation):
+      implicit: "implicit_method"
+      explicit: "explicit_method"
+
+  - name: "explicit_method"
+    operations(synthesis):
+      - main_op_name: "valgen:enum"
+        condition_op_name: "condition:identity"
+        read_paths:
+          classifications: {"train": 0.5, "flight": 0.5}
+        write_path: "$.method_name"
+    conditions(synthesis):
+      train: "train_personal_demands"
+      flight: "flight_personal_demands"
+    operations(evaluation):
+      - main_op_name: "field:extract_explicit_method"
+        condition_op_name: "condition:set_flag"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+        write_path: "$.method_name"
+    conditions(evaluation):
+      train: "train_personal_demands"
+      flight: "flight_personal_demands"
+
+  - name: "implicit_method"
+    operations(synthesis):
+      - main_op_name: "valgen:enum"
+        condition_op_name: "condition:identity"
+        read_paths:
+          classifications: {"train": 0.5, "flight": 0.5}
+        write_path: "$.method_name"
+    conditions(synthesis):
+      train: "specific_train_stations"
+      flight: "specific_airports"
+    operations(evaluation):
+      - main_op_name: "field:determine_implicit_method"
+        condition_op_name: "condition:set_flag"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+        write_path: "$.method_name"
+    conditions(evaluation):
+      train: "specific_train_stations"
+      flight: "specific_airports"
+
+  - name: "specific_train_stations"
+    operations(synthesis):
+      - main_op_name: "property:sample"
+        condition_op_name: "condition:true"
+        read_paths:
+          property_name: "train_station"
+          category_name: "$.destination_city"
+        write_path: "$.destination_station"
+    conditions(synthesis):
+      true: "train_personal_demands"
+    operations(evaluation):
+      - main_op_name: "field:validate_train_stations"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+          expected_cities: {"destination": "$.destination_city", "source": "$.source_city"}
+        write_path: "$.validation_result"
+    conditions(evaluation):
+      true: "train_personal_demands"
+
+  - name: "specific_airports"
+    operations(synthesis):
+      - main_op_name: "property:sample"
+        condition_op_name: "condition:true"
+        read_paths:
+          property_name: "airport"
+          category_name: "$.destination_city"
+        write_path: "$.destination_airport"
+    conditions(synthesis):
+      true: "flight_personal_demands"
+    operations(evaluation):
+      - main_op_name: "field:validate_airports"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+          expected_cities: {"destination": "$.destination_city", "source": "$.source_city"}
+        write_path: "$.validation_result"
+    conditions(evaluation):
+      true: "flight_personal_demands"
+
+  - name: "train_personal_demands"
+    operations(synthesis):
+      - main_op_name: "property:sample"
+        condition_op_name: "condition:true"
+        read_paths:
+          property_name: "pref_for_train"
+          count: 2
+          random_category: "@True"
+        write_path: "$.personal_demands"
+    conditions(synthesis):
+      true: "finalization"
+    operations(evaluation):
+      - main_op_name: "field:validate_train_demands"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+          expected_tool: "train_search"
+        write_path: "$.validation_result"
+    conditions(evaluation):
+      true: "finalization"
+
+  - name: "flight_personal_demands"
+    operations(synthesis):
+      - main_op_name: "property:sample"
+        condition_op_name: "condition:true"
+        read_paths:
+          property_name: "pref_for_flight"
+          count: 2
+          random_category: "@True"
+        write_path: "$.personal_demands"
+    conditions(synthesis):
+      true: "finalization"
+    operations(evaluation):
+      - main_op_name: "field:validate_flight_demands"
+        condition_op_name: "condition:true"
+        read_paths:
+          tool_call: "$.agent_tool_call"
+          expected_tool: "flight_search"
+        write_path: "$.validation_result"
+    conditions(evaluation):
+      true: "finalization"
+
+  - name: "finalization"
+    operations(synthesis):
+      - main_op_name: "llm:request"
+        condition_op_name: "condition:true"
+        read_paths:
+          destination_city: "$.destination_city"
+          source_city: "$.source_city"
+          departure_date: "$.departure_date"
+          method_info: {"description": "$.method_description", "name": "$.method_name"}
+          destination_station: "$.destination_station"
+          destination_airport: "$.destination_airport"
+          personal_demands: "$.personal_demands"
+          prompt: |
+            You are a user of flight and train search application, now generate a query according to the given requiremetns
+            Note that: if not specified, you do not need to include it in the query, but for all specified items, you need to include them in the query
+            Destination city: {destination_city}
+            Source city: {source_city}
+            Departure date: {departure_date}
+            Method info: {method_info}
+            Destination Station: {destination_station}
+            Destination Airport: {destination_airport}
+            Personal demands: {personal_demands}
+
+            Only return the query itself, do not include other info.
+          model: "DeepSeek-V3.1"
+        write_path: "$.synthetic_query"
+    conditions(synthesis):
+      true: "_end"
+    operations(evaluation):
+      - main_op_name: "llm:evaluate_agent"
+        condition_op_name: "condition:true"
+        read_paths:
+          agent_response: "$.agent_response"
+          rollout_log: "$.rollout_log"
+          expected_fields: "$.expected_validation_fields"
+        write_path: "$.evaluation_result"
+    conditions(evaluation):
+      true: "_end"
+
+properties:
+  - property_name: "city"
+    categories:
+      - category_name: "destination_cities"
+        weight: 1.0
+        items:
+          - item_name: "Beijing"
+            weight: 4.0
+          - item_name: "Guangzhou"
+            weight: 3.0
+          - item_name: "Shanghai"
+            weight: 2.0
+          - item_name: "Shenzhen"
+            weight: 1.0
+          
+      - category_name: "source_cities"
+        weight: 1.0
+        items:
+          - item_name: "Hangzhou"
+            weight: 4.0
+          - item_name: "Chengdu"
+            weight: 3.0
+          - item_name: "Wuhan"
+            weight: 2.0
+          - item_name: "Nanjing"
+            weight: 1.0
+
+          
+          
+
+  - property_name: "train_station"
+    categories:
+      - category_name: "Beijing"
+        weight: 1.0
+        items:
+          - item_name: "Beijing West"
+            weight: 1.0
+          - item_name: "Beijing South"
+            weight: 1.0
+          - item_name: "Beijing North"
+            weight: 1.0
+          - item_name: "Beijing East"
+            weight: 1.0
+      - category_name: "Guangzhou"
+        weight: 1.0
+        items:
+          - item_name: "Guangzhou South"
+            weight: 1.0
+          - item_name: "Guangzhou East"
+            weight: 1.0
+          - item_name: "Guangzhou West"
+            weight: 1.0
+          - item_name: "Guangzhou North"
+            weight: 1.0
+      - category_name: "Shanghai"
+        weight: 1.0
+        items:
+          - item_name: "Shanghai South"
+            weight: 1.0
+          - item_name: "Shanghai East"
+            weight: 1.0
+          - item_name: "Shanghai West"
+            weight: 1.0
+          - item_name: "Shanghai North"
+            weight: 1.0
+      - category_name: "Shenzhen"
+        weight: 1.0
+        items:
+          - item_name: "Shenzhen South"
+            weight: 1.0
+          - item_name: "Shenzhen East"
+            weight: 1.0
+          - item_name: "Shenzhen West"
+            weight: 1.0
+          - item_name: "Shenzhen North"
+            weight: 1.0
+
+  - property_name: "airport"
+    categories:
+      - category_name: "Beijing"
+        weight: 1.0
+        items:
+          - item_name: "Beijing Capital International Airport"
+            weight: 1.0
+          - item_name: "Beijing Daxing International Airport"
+            weight: 1.0
+      - category_name: "Guangzhou"
+        weight: 1.0
+        items:
+          - item_name: "Guangzhou Baiyun International Airport"
+            weight: 1.0
+      - category_name: "Shanghai"
+        weight: 1.0
+        items:
+          - item_name: "Shanghai Pudong International Airport"
+            weight: 1.0
+          - item_name: "Shanghai Hongqiao International Airport"
+            weight: 1.0
+      - category_name: "Shenzhen"
+        weight: 1.0
+        items:
+          - item_name: "Shenzhen Bao'an International Airport"
+            weight: 1.0
+
+  - property_name: "pref_for_train"
+    categories:
+      - category_name: "comfort"
+        weight: 2.0
+        items:
+          - item_name: "first-class cabin"
+            weight: 3.0
+          - item_name: "business class"
+            weight: 2.0
+          - item_name: "quiet car"
+            weight: 2.0
+      - category_name: "amenities"
+        weight: 2.0
+        items:
+          - item_name: "meal included"
+            weight: 3.0
+          - item_name: "WiFi connection"
+            weight: 3.0
+          - item_name: "power outlets"
+            weight: 2.0
+
+  - property_name: "pref_for_flight"
+    categories:
+      - category_name: "comfort"
+        weight: 2.0
+        items:
+          - item_name: "first-class cabin"
+            weight: 3.0
+          - item_name: "business class"
+            weight: 3.0
+          - item_name: "extra legroom"
+            weight: 2.0
+      - category_name: "amenities"
+        weight: 2.0
+        items:
+          - item_name: "meal included"
+            weight: 3.0
+          - item_name: "WiFi connection"
+            weight: 2.0
+          - item_name: "entertainment system"
+            weight: 2.0
+
+  - property_name: "relative_date"
+    categories:
+      - category_name: "tomorrow_variants"
+        weight: 2.0
+        items:
+          - item_name: "tomorrow"
+            weight: 3.0
+          - item_name: "next day"
+            weight: 2.0
+      - category_name: "today_variants"
+        weight: 3.0
+        items:
+          - item_name: "today"
+            weight: 4.0
+          - item_name: "same day"
+            weight: 2.0
+      - category_name: "week_variants"
+        weight: 2.0
+        items:
+          - item_name: "this weekend"
+            weight: 2.0
+          - item_name: "next week"
+            weight: 2.0
+
+start_node_placeholder: "_start"
+end_node_placeholder: "_end"

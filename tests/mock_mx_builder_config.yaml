@@ -1,0 +1,131 @@
+mx_node_configs:
+  - name: "node1"
+    operations(a):
+      - main_op_name: "judge:equal"
+        condition_op_name: "condition:exist"
+        read_paths:
+          target: "$.arg1"
+          source: "$.arg2"
+        write_path: "$.result1"
+    conditions(a):
+      true: "node2"
+      false: "node3"
+    operations(b):
+      - main_op_name: "judge:include"
+        condition_op_name: "condition:identity"
+        read_paths:
+          target: "$.arg1"
+          source: "$.arg2"
+        write_path: "$.result1"
+    conditions(b):
+      true: "node3"
+      false: "node2"
+    operations:
+      - main_op_name: "judge:include"
+        condition_op_name: "condition:identity"
+        read_paths:
+          target: "$.arg1"
+          source: "$.arg2"
+        write_path: "$.result1"
+    conditions:
+      true: "_end"
+      false: "node2"
+  - name: "node2"
+    operations(a):
+      - main_op_name: "judge:equal"
+        condition_op_name: "condition:exist"
+        read_paths:
+          target: "$.arg1"
+          source: "$.arg2"
+        write_path: "$.result2"
+    operations(b):
+      - main_op_name: "judge:include"
+        condition_op_name: "condition:identity"
+        read_paths:
+          target: "$.arg1"
+          source: "$.arg2"
+        write_path: "$.result2"
+    operations:
+      - main_op_name: "judge:include"
+        condition_op_name: "condition:identity"
+        read_paths:
+          target: "$.arg1"
+          source: "$.arg2"
+        write_path: "$.result1"
+    conditions:
+      true: "_end"
+      false: "_end"
+  - name: "node3"
+    operations(a):
+      - main_op_name: "judge:equal"
+        condition_op_name: "condition:exist"
+        read_paths:
+          target: "$.arg1"
+          source: "$.arg2"
+        write_path: "$.result3"
+    conditions(a):
+      true: "node4"
+      false: "_end"
+    operations(b):
+      - main_op_name: "judge:equal"
+        condition_op_name: "condition:exist"
+        read_paths:
+          target: "$.arg1"
+          source: "$.arg2"
+        write_path: "$.result3"
+  - name: "node4"
+    operations(a):
+      - main_op_name: "judge:equal"
+        condition_op_name: "condition:exist"
+        read_paths:
+          target: "$.arg1"
+          source: "$.arg2"
+        write_path: "$.result3"
+properties:
+  - property_name: color
+    categories:
+      - category_name: primary
+        weight: 2.0
+        items:
+          - item_name: red
+            weight: 3.0
+          - item_name: blue
+            weight: 2.0
+          - item_name: yellow
+            weight: 1.0
+      - category_name: secondary
+        weight: 1.0
+        items:
+          - item_name: green
+            weight: 2.0
+          - item_name: orange
+            weight: 1.5
+          - item_name: purple
+            weight: 1.0
+  - property_name: size
+    categories:
+      - category_name: small
+        weight: 1.0
+        items:
+          - item_name: tiny
+            weight: 1.0
+          - item_name: small
+            weight: 2.0
+      - category_name: large
+        weight: 2.0
+        items:
+          - item_name: big
+            weight: 2.0
+          - item_name: huge
+            weight: 1.0
+constrains:
+  - constrain_subject:
+      property_name: color
+      category_name: primary
+      item_name: red
+    constrain_object:
+      - property_name: size
+        category_name: large
+        item_name: huge
+start_node_placeholder: _start_test
+end_node_placeholder: _end
