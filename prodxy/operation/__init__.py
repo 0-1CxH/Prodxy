@@ -19,7 +19,8 @@ OperationMap = {
     "condition:exist": lambda x: True if x else False,
     "condition:identity": lambda x: x,
     "condition:true": lambda x: True,
-    "property:sample": None
+    "property:sample": None,
+    "debug:print": lambda **kwargs: print(kwargs),
 }
 
     

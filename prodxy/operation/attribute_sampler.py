@@ -83,7 +83,7 @@ class ValueGeneratorPrimitives:
             return [random.uniform(start, end) for _ in range(count)]
     
     @staticmethod
-    def date(boundary, is_sequential, count=1):
+    def date(boundary, is_sequential=True, count=1):
         # boundary could be datetime or date (in YYYY-mm-DD format)
         # is_sequential means whether the values should be sequential (x+1-th is later than x-th)
         # count means how many values to generate
@@ -103,6 +103,8 @@ class ValueGeneratorPrimitives:
         if isinstance(boundary, (list, tuple)):
             start_date = parse_date(boundary[0])
             end_date = parse_date(boundary[1])
+        elif isinstance(boundary, int):
+            end_date = start_date + timedelta(days=boundary)
         else:
             end_date = parse_date(boundary)
             # If single boundary, determine range relative to today
@@ -391,11 +393,20 @@ class ProdxyPropertyLibrary:
 
         return indicators
     
-    def sample(self, property_name, category_name=None, count=1, allow_repeat=False):
-        if category_name is None:
-            ret = self.sample_categories(property_name, count=count, allow_repeat=allow_repeat)
+    def sample(self, property_name, category_name=None, count=1, allow_repeat=False, none_prob=0.0, random_category=False):
+        if none_prob > 0:
+            if random.random() < none_prob:
+                return None
+        if random_category is False:
+            if category_name is None:
+                ret = self.sample_categories(property_name, count=count, allow_repeat=allow_repeat)
+            else:
+                ret = self.sample_items(property_name, category_name, count=count, allow_repeat=allow_repeat)
         else:
-            ret = self.sample_items(property_name, category_name, count=count, allow_repeat=allow_repeat)
+            ret = []
+            for c in range(count):
+                category_name = self.sample_categories(property_name, count=1, allow_repeat=False)[0].category_name
+                ret.append(self.sample_items(property_name, category_name, count=1, allow_repeat=False)[0])
         
         ret = [_.value() for _ in ret]
         if len(ret) == 1:

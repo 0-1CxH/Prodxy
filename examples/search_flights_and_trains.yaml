@@ -1,11 +1,12 @@
 mx_node_configs:
   - name: "general_destination_city"
     operations(synthesis):
-      - main_op_name: "property:sample_or_none"
-        condition_op_name: "condition:has_value"
+      - main_op_name: "property:sample"
+        condition_op_name: "condition:exist"
         read_paths:
           property_name: "city"
-          none_probability: 0.1
+          category_name: "destination_cities"
+          none_prob: 0.1
         write_path: "$.destination_city"
     conditions(synthesis):
       false: "finalization"
@@ -22,12 +23,12 @@ mx_node_configs:
 
   - name: "general_source_city"
     operations(synthesis):
-      - main_op_name: "property:sample_different_or_none"
+      - main_op_name: "property:sample"
         condition_op_name: "condition:true"
         read_paths:
           property_name: "city"
-          exclude_value: "$.destination_city"
-          none_probability: 0.3
+          category_name: "source_cities"
+          none_prob: 0.3
         write_path: "$.source_city"
     conditions(synthesis):
       true: "departure_date_format"
@@ -43,10 +44,9 @@ mx_node_configs:
   - name: "departure_date_format"
     operations(synthesis):
       - main_op_name: "valgen:enum"
-        condition_op_name: "condition:set_flag"
+        condition_op_name: "condition:identity"
         read_paths:
-          choices: ["relative", "absolute", "range"]
-          weights: [0.4, 0.4, 0.2]
+          classifications: {"relative": 0.4, "absolute": 0.4, "range": 0.2}
         write_path: "$.date_format"
     conditions(synthesis):
       relative: "relative_departure_date"
@@ -69,6 +69,7 @@ mx_node_configs:
         condition_op_name: "condition:true"
         read_paths:
           property_name: "relative_date"
+          random_category: "@True"
         write_path: "$.departure_date"
     conditions(synthesis):
       true: "specific_method"
@@ -87,7 +88,7 @@ mx_node_configs:
       - main_op_name: "valgen:date"
         condition_op_name: "condition:true"
         read_paths:
-          boundary: "@(2026-01-01,2027-12-31)"
+          boundary: "@5"
         write_path: "$.departure_date"
     conditions(synthesis):
       true: "specific_method"
@@ -103,11 +104,11 @@ mx_node_configs:
 
   - name: "departure_date_range"
     operations(synthesis):
-      - main_op_name: "valgen:date_range"
+      - main_op_name: "valgen:date"
         condition_op_name: "condition:true"
         read_paths:
-          boundary: "@(2026-01-01,2027-12-31)"
-          range_days: "@(1,30)"
+          boundary: "@('2026-01-01','2026-01-10')"
+          count: "@2"
         write_path: "$.departure_date"
     conditions(synthesis):
       true: "specific_method"
@@ -124,17 +125,16 @@ mx_node_configs:
   - name: "specific_method"
     operations(synthesis):
       - main_op_name: "valgen:enum"
-        condition_op_name: "condition:set_flag"
+        condition_op_name: "condition:identity"
         read_paths:
-          choices: ["implicit", "explicit"]
-          weights: [0.3, 0.7]
+          classifications: {"implicit": 0.3, "explicit": 0.7}
         write_path: "$.method_description"
     conditions(synthesis):
       implicit: "implicit_method"
       explicit: "explicit_method"
     operations(evaluation):
       - main_op_name: "field:determine_method_type"
-        condition_op_name: "condition:set_flag"
+        condition_op_name: "condition:identity"
         read_paths:
           tool_call: "$.agent_tool_call"
         write_path: "$.method_description"
@@ -145,10 +145,9 @@ mx_node_configs:
   - name: "explicit_method"
     operations(synthesis):
       - main_op_name: "valgen:enum"
-        condition_op_name: "condition:set_flag"
+        condition_op_name: "condition:identity"
         read_paths:
-          choices: ["train", "flight"]
-          weights: [0.5, 0.5]
+          classifications: {"train": 0.5, "flight": 0.5}
         write_path: "$.method_name"
     conditions(synthesis):
       train: "train_personal_demands"
@@ -166,10 +165,9 @@ mx_node_configs:
   - name: "implicit_method"
     operations(synthesis):
       - main_op_name: "valgen:enum"
-        condition_op_name: "condition:set_flag"
+        condition_op_name: "condition:identity"
         read_paths:
-          choices: ["train", "flight"]
-          weights: [0.5, 0.5]
+          classifications: {"train": 0.5, "flight": 0.5}
         write_path: "$.method_name"
     conditions(synthesis):
       train: "specific_train_stations"
@@ -186,13 +184,12 @@ mx_node_configs:
 
   - name: "specific_train_stations"
     operations(synthesis):
-      - main_op_name: "property:sample_stations"
+      - main_op_name: "property:sample"
         condition_op_name: "condition:true"
         read_paths:
           property_name: "train_station"
-          destination_city: "$.destination_city"
-          source_city: "$.source_city"
-        write_path: "$.stations"
+          category_name: "$.destination_city"
+        write_path: "$.destination_station"
     conditions(synthesis):
       true: "train_personal_demands"
     operations(evaluation):
@@ -207,13 +204,12 @@ mx_node_configs:
 
   - name: "specific_airports"
     operations(synthesis):
-      - main_op_name: "property:sample_airports"
+      - main_op_name: "property:sample"
         condition_op_name: "condition:true"
         read_paths:
           property_name: "airport"
-          destination_city: "$.destination_city"
-          source_city: "$.source_city"
-        write_path: "$.airports"
+          category_name: "$.destination_city"
+        write_path: "$.destination_airport"
     conditions(synthesis):
       true: "flight_personal_demands"
     operations(evaluation):
@@ -228,11 +224,12 @@ mx_node_configs:
 
   - name: "train_personal_demands"
     operations(synthesis):
-      - main_op_name: "property:sample_multiple_or_none"
+      - main_op_name: "property:sample"
         condition_op_name: "condition:true"
         read_paths:
           property_name: "pref_for_train"
-          max_count: 3
+          count: 2
+          random_category: "@True"
         write_path: "$.personal_demands"
     conditions(synthesis):
       true: "finalization"
@@ -248,11 +245,12 @@ mx_node_configs:
 
   - name: "flight_personal_demands"
     operations(synthesis):
-      - main_op_name: "property:sample_multiple_or_none"
+      - main_op_name: "property:sample"
         condition_op_name: "condition:true"
         read_paths:
           property_name: "pref_for_flight"
-          max_count: 3
+          count: 2
+          random_category: "@True"
         write_path: "$.personal_demands"
     conditions(synthesis):
       true: "finalization"
@@ -268,16 +266,29 @@ mx_node_configs:
 
   - name: "finalization"
     operations(synthesis):
-      - main_op_name: "llm:synthesize_query"
+      - main_op_name: "llm:request"
         condition_op_name: "condition:true"
         read_paths:
           destination_city: "$.destination_city"
           source_city: "$.source_city"
           departure_date: "$.departure_date"
           method_info: {"description": "$.method_description", "name": "$.method_name"}
-          stations: "$.stations"
-          airports: "$.airports"
+          destination_station: "$.destination_station"
+          destination_airport: "$.destination_airport"
           personal_demands: "$.personal_demands"
+          prompt: |
+            You are a user of flight and train search application, now generate a query according to the given requiremetns
+            Note that: if not specified, you do not need to include it in the query, but for all specified items, you need to include them in the query
+            Destination city: {destination_city}
+            Source city: {source_city}
+            Departure date: {departure_date}
+            Method info: {method_info}
+            Destination Station: {destination_station}
+            Destination Airport: {destination_airport}
+            Personal demands: {personal_demands}
+
+            Only return the query itself, do not include other info.
+          model: "DeepSeek-V3.1"
         write_path: "$.synthetic_query"
     conditions(synthesis):
       true: "_end"
@@ -295,86 +306,106 @@ mx_node_configs:
 properties:
   - property_name: "city"
     categories:
-      - category_name: "major_cities"
-        weight: 3.0
+      - category_name: "destination_cities"
+        weight: 1.0
         items:
-          - item_name: "New York"
-            weight: 5.0
-          - item_name: "London"
-            weight: 5.0
-          - item_name: "Tokyo"
+          - item_name: "Beijing"
             weight: 4.0
-          - item_name: "Paris"
-            weight: 4.0
-          - item_name: "Berlin"
+          - item_name: "Guangzhou"
             weight: 3.0
-          - item_name: "Sydney"
-            weight: 3.0
-          - item_name: "Singapore"
-            weight: 3.0
-      - category_name: "secondary_cities"
-        weight: 2.0
+          - item_name: "Shanghai"
+            weight: 2.0
+          - item_name: "Shenzhen"
+            weight: 1.0
+          
+      - category_name: "source_cities"
+        weight: 1.0
         items:
-          - item_name: "Boston"
+          - item_name: "Hangzhou"
+            weight: 4.0
+          - item_name: "Chengdu"
+            weight: 3.0
+          - item_name: "Wuhan"
             weight: 2.0
-          - item_name: "Manchester"
-            weight: 2.0
-          - item_name: "Osaka"
-            weight: 2.0
-          - item_name: "Lyon"
-            weight: 2.0
-          - item_name: "Munich"
-            weight: 2.0
+          - item_name: "Nanjing"
+            weight: 1.0
+
+          
+          
 
   - property_name: "train_station"
     categories:
-      - category_name: "major_stations"
-        weight: 3.0
+      - category_name: "Beijing"
+        weight: 1.0
         items:
-          - item_name: "Grand Central Terminal"
-            weight: 3.0
-          - item_name: "King's Cross Station"
-            weight: 3.0
-          - item_name: "Tokyo Station"
-            weight: 3.0
-          - item_name: "Gare du Nord"
-            weight: 3.0
-          - item_name: "Hauptbahnhof"
-            weight: 3.0
-      - category_name: "regional_stations"
-        weight: 2.0
+          - item_name: "Beijing West"
+            weight: 1.0
+          - item_name: "Beijing South"
+            weight: 1.0
+          - item_name: "Beijing North"
+            weight: 1.0
+          - item_name: "Beijing East"
+            weight: 1.0
+      - category_name: "Guangzhou"
+        weight: 1.0
         items:
-          - item_name: "Penn Station"
-            weight: 2.0
-          - item_name: "Euston Station"
-            weight: 2.0
-          - item_name: "Shinjuku Station"
-            weight: 2.0
+          - item_name: "Guangzhou South"
+            weight: 1.0
+          - item_name: "Guangzhou East"
+            weight: 1.0
+          - item_name: "Guangzhou West"
+            weight: 1.0
+          - item_name: "Guangzhou North"
+            weight: 1.0
+      - category_name: "Shanghai"
+        weight: 1.0
+        items:
+          - item_name: "Shanghai South"
+            weight: 1.0
+          - item_name: "Shanghai East"
+            weight: 1.0
+          - item_name: "Shanghai West"
+            weight: 1.0
+          - item_name: "Shanghai North"
+            weight: 1.0
+      - category_name: "Shenzhen"
+        weight: 1.0
+        items:
+          - item_name: "Shenzhen South"
+            weight: 1.0
+          - item_name: "Shenzhen East"
+            weight: 1.0
+          - item_name: "Shenzhen West"
+            weight: 1.0
+          - item_name: "Shenzhen North"
+            weight: 1.0
 
   - property_name: "airport"
     categories:
-      - category_name: "international_airports"
-        weight: 3.0
+      - category_name: "Beijing"
+        weight: 1.0
         items:
-          - item_name: "JFK International Airport"
-            weight: 4.0
-          - item_name: "Heathrow Airport"
-            weight: 4.0
-          - item_name: "Haneda Airport"
-            weight: 3.0
-          - item_name: "Charles de Gaulle Airport"
-            weight: 3.0
-          - item_name: "Frankfurt Airport"
-            weight: 3.0
-      - category_name: "domestic_airports"
-        weight: 2.0
+          - item_name: "Beijing Capital International Airport"
+            weight: 1.0
+          - item_name: "Beijing Daxing International Airport"
+            weight: 1.0
+      - category_name: "Guangzhou"
+        weight: 1.0
         items:
-          - item_name: "LaGuardia Airport"
-            weight: 2.0
-          - item_name: "Gatwick Airport"
-            weight: 2.0
-          - item_name: "Narita Airport"
-            weight: 2.0
+          - item_name: "Guangzhou Baiyun International Airport"
+            weight: 1.0
+      - category_name: "Shanghai"
+        weight: 1.0
+        items:
+          - item_name: "Shanghai Pudong International Airport"
+            weight: 1.0
+          - item_name: "Shanghai Hongqiao International Airport"
+            weight: 1.0
+      - category_name: "Shenzhen"
+        weight: 1.0
+        items:
+          - item_name: "Shenzhen Bao'an International Airport"
+            weight: 1.0
 
   - property_name: "pref_for_train"
     categories:

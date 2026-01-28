@@ -4,6 +4,7 @@ import re
 import requests
 import traceback
 import json
+import os
 from dataclasses import dataclass
 from typing import Optional, Dict
 
@@ -21,18 +22,23 @@ class RawLLMRequest:
     
     @staticmethod
     def by_curl(**kwargs):
-        api_url = kwargs['api_url']
-        api_key = kwargs['api_key']
+        api_url = kwargs.get('api_url') or os.environ.get('LLM_API_URL')
+        api_key = kwargs.get('api_key') or os.environ.get('LLM_API_KEY')
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
         payload = {
             "model": kwargs['model'],
-            "messages": [{"role": "user", "content": kwargs['prompt']}],
             "stream": kwargs.get('stream', False),
             **kwargs.get('extra_params', {})
         }
+        for k in kwargs:
+            if kwargs[k] is None:
+                kwargs[k] = "not specified"
+        prompt = kwargs['prompt'].format(**kwargs)
+        messages = [{"role": "user", "content": prompt}]
+        payload.update({"messages": messages})
 
         response = requests.post(api_url, headers=headers, json=payload, timeout=180)
         response.raise_for_status()

@@ -109,14 +109,17 @@ class ProdxyNode:
         arg_values = {}
 
         for argkey, argpath in operation_config.read_paths.items():
-            if argpath.startswith('@'): # literal string
-                argliteral =  argpath[1:]
-                try:
-                    arg_values[argkey] = eval(argliteral)
-                except:
-                    arg_values[argkey] = argliteral
-            elif argpath.startswith('$'): # json path
-                arg_values[argkey] = global_state_data[argpath]
+            if isinstance(argpath, str):
+                if argpath.startswith('@'): # literal string
+                    argliteral =  argpath[1:]
+                    try:
+                        arg_values[argkey] = eval(argliteral)
+                    except:
+                        arg_values[argkey] = argliteral
+                elif argpath.startswith('$'): # json path
+                    arg_values[argkey] = global_state_data[argpath]
+                else:
+                    arg_values[argkey] = argpath
             else:
                 arg_values[argkey] = argpath
             

@@ -1,6 +1,34 @@
 
 # Introduction
-Prodxy (Product Proxy) is a low-code framework that ensures close alignment between product requirements and engineering implementation by converting business scenarios into executable pipelines for LLM-agent-related query synthesis, data labeling and capability evaluation, sharing the same underlying graph structure. 
+
+Prodxy (Product Proxy) is a low-code framework that ensures close alignment between product requirements and engineering implementation by converting business scenarios into executable pipelines for LLM-agent-related query synthesis, data labeling and capability evaluation, sharing the same underlying graph structure.
+
+Prodxy（Product Proxy）是一个低代码框架，通过将业务场景转换为可执行的管道，确保产品需求与工程实现之间的紧密对齐，用于LLM代理相关的查询合成、数据标注和能力评估，共享相同的底层图结构。
+
+1. **Understand your business scenario or product requirements**: Identify the key components, constraints, and expected behaviors of your LLM agent system.
+
+2. **Build a `ProdxyGraph` as the shared foundational architecture**: Create a graph structure that represents the core decision flow and processing steps of your system.
+
+3. **Create specialized pipelines to `ProdxyGraph`**:
+   - If you don't have queries yet, or you need more queries, add a **query synthesis pipeline** on top of the Prodxy graph to generate synthetic queries
+   - If you already have queries that need to be labeled, add a **data labeling pipeline** on top of the Prodxy graph to annotate and process your existing data
+   - If you need to evaluate capabilities, build an **evaluation pipeline** on top of the Prodxy graph to assess performance and quality metrics
+
+All these pipelines (or any number of additional pipelines) can be described using a single **ProdxyMx** configuration, enabling multiplexed variants that share the same base graph structure while having different operations for different purposes. 
+
+1. **了解您的业务场景或产品需求**：识别您的LLM代理系统的关键组件、约束条件和预期行为。
+
+2. **构建`ProdxyGraph`作为共享的基础架构**：创建一个图结构，代表系统的核心决策流程和处理步骤。
+
+3. **在`ProdxyGraph`上创建专用管道**：
+   - 如果您还没有查询，或者需要更多查询，请在Prodxy图之上添加**查询合成管道**来生成合成查询
+   - 如果您已有需要标注的查询，请在Prodxy图之上添加**数据标注管道**来注释和处理现有数据
+   - 如果您需要评估能力，请在Prodxy图之上构建**评估管道**来评估性能和质量指标
+
+所有这些管道（或任意数量的附加管道）都可以使用单一的**ProdxyMx**配置进行描述，从而启用多路复用变体，这些变体共享相同的基础图结构，但针对不同目的具有不同的操作。
+
+
+[中文版](README_zh.md)
 
 # Quick Start
 
