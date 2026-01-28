@@ -3,7 +3,7 @@
 
 Prodxy (Product Proxy) is a low-code framework that ensures close alignment between product requirements and engineering implementation by converting business scenarios into executable pipelines for LLM-agent-related query synthesis, data labeling and capability evaluation, sharing the same underlying graph structure.
 
-Prodxy（Product Proxy）是一个低代码框架，通过将业务场景转换为可执行的管道，确保产品需求与工程实现之间的紧密对齐，用于LLM代理相关的查询合成、数据标注和能力评估，共享相同的底层图结构。
+Prodxy（Product Proxy）是一个低代码框架，通过将业务场景转换为可执行的管道，确保产品需求与工程实现之间的紧密对齐，用于LLM Agent相关的查询合成、数据标注和能力评估，共享相同的底层图结构。
 
 ![concept_figure](concept_figure.png)
 
